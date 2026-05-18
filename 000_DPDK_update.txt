@@ -1,0 +1,63 @@
+ 1999  clear
+ 2000  ls
+ 2001  git pull
+ 2002  git status
+ 2003  git remote add upstream https://github.com/DPDK/dpdk.git
+ 2004  git fetch upstream
+ 2005  git checkout -b mainUpdated
+ 2006  git rebase upstream/main
+ 2007  clear
+ 2008  ls
+ 2009  git status
+ 2010  git log upstream/main..mainUpdated --oneline
+ 2011  git rev-list --count upstream/main..mainUpdated
+ 2012  git rev-list --count mainUpdated..upstream/main
+ 2013  git push origin mainUpdated
+ 2014  git push origin main
+ 2015  git switch main
+ 2016  history
+jacopo@jacopocarlonMuletto:~/Desktop/dpdk$ 
+
+
+
+jacopo@jacopocarlonMuletto:~/Desktop/dpdk$ git push
+fatal: The current branch mainUpdated has no upstream branch.
+To push the current branch and set the remote as upstream, use
+
+    git push --set-upstream origin mainUpdated
+
+To have this happen automatically for branches without a tracking
+upstream, see 'push.autoSetupRemote' in 'git help config'.
+
+jacopo@jacopocarlonMuletto:~/Desktop/dpdk$ git branch --set-upstream-to=origin/mainUpdated mainUpdated
+branch 'mainUpdated' set up to track 'origin/mainUpdated'.
+jacopo@jacopocarlonMuletto:~/Desktop/dpdk$ git pull
+Already up to date.
+jacopo@jacopocarlonMuletto:~/Desktop/dpdk$ git push
+Everything up-to-date
+jacopo@jacopocarlonMuletto:~/Desktop/dpdk$ 
+
+
+
+
+
+ 1982  clear
+ 1983  ls
+ 1984  git pull
+ 1985  ls -al
+ 1986  git status
+ 1987  git branch
+ 1988  git switch mainUpdated 
+ 1989  git status 
+ 1990  git pull
+ 1991  ls -al
+ 1992  sudo meson setup --wipe -Dexamples=l2fwd,l3fwd,l3fwd-power -Denable_drivers=/net/intel/i40e build    
+ 1993  sudo ninja -C build install 
+ 1994  clear
+ 1995  ls
+ 1996  sudo usertools/dpdk-devbind.py -s
+ 1997  sudo modprobe vfio-pci
+ 1998  sudo ./usertools/dpdk-devbind.py -b vfio-pci 0000:04:00.0 0000:04:00.1
+ 1999  exit
+ 2000  history
+jcarlon@treebeard:~$ 
