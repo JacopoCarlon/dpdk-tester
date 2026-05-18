@@ -161,15 +161,15 @@ for cpu in /sys/devices/system/cpu/cpu[0-9]*; do
             echo performance > $cpu/power/energy_perf_bias
         fi
         if [ -f $cpu/power/pm_qos_resume_latency_us ]; then
-            echo 4294967295 > $cpu/power/pm_qos_resume_latency_us
+            echo 0 > $cpu/power/pm_qos_resume_latency_us
         fi
         if [ -d $cpu/cpuidle ]; then
             for state in $cpu/cpuidle/state*; do
                 if [ -f "$state/disable" ]; then
                     if [ $ENABLE_CSTATES -eq 1 ]; then
-                        echo 0 | tee "$state/disable" > /dev/null 2>/dev/null  	# enable state
+                        echo 0 | sudo tee "$state/disable" > /dev/null 2>/dev/null  	# enable state
                     else
-                        echo 1 | tee "$state/disable" > /dev/null 2>/dev/null 	# disable state (silent on failure)
+                        echo 1 | sudo tee "$state/disable" > /dev/null 2>/dev/null 	# disable state (silent on failure)
                     fi
                 fi
             done
