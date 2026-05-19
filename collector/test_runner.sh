@@ -112,6 +112,10 @@ for target_freq in "${TARGET_FREQUENCIES[@]}"; do
     sudo $FREQ_SCRIPT --enable-cstates $target_freq $target_freq
 
     echo "=== === === === === === ==="
+    echo "=== === === === === === ==="
+    echo "=== === === === === === ==="
+    echo "=== === === === === === ==="
+    echo "=== === === === === === ==="
     echo "Starting iterating on userspace governor with frequency $target_freq"
 
     for traffic in "${TRAFFICS[@]}"; do
@@ -125,7 +129,9 @@ for target_freq in "${TARGET_FREQUENCIES[@]}"; do
         # Fallback if no name was given
         [[ -z "$traffic_name" ]] && traffic_name="traffic"
 
-        echo "--- --- --- --- ---"
+        echo "--- --- --- --- --- --- --- --- ---"
+        echo "--- --- --- --- --- --- --- --- ---"
+        echo "--- --- --- --- --- --- --- --- ---"
         echo "Starting iterating on traffic $traffic"
 
         for exp in "${EXPERIMENTS[@]}"; do
