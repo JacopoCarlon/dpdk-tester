@@ -18,10 +18,10 @@ TRAFFICS=(
     "-p tlogn -s 256 -b 256 -w -3.5 -x 0.1 -y -3.5 -z 0.1 -W -9.9 -X 0.1 -n turbo_tuned_tlogn"
 
     # Example 2: ON/OFF with name "onoff_lowload"
-    "-p onoff -s 512 -b 32 -U 0.01 -N 0.02 -R 1500000 -n onoff_lowload"
+    ## "-p onoff -s 512 -b 32 -U 0.01 -N 0.02 -R 1500000 -n onoff_lowload"
 
     # Example 3: Uniform baseline (you can override rates via -r if needed)
-    "-p uniform -s 256 -r 2440000 -b 32 -n uniform_baseline"
+    ## "-p uniform -s 256 -r 2440000 -b 32 -n uniform_baseline"
 )
 
 ############################################################
@@ -61,7 +61,7 @@ TRAFFICS=(
 ##  ##  ##      exit 0
 ##  ##  ##  }
 ############################################################
-EXPERIMENTS=(
+EXPERIMENTS_BIG=(
     # Baseline - vary baseline_pause_duration
     "baseline -B 30"
     "baseline -B 50"
@@ -71,32 +71,30 @@ EXPERIMENTS=(
     "baseline -B 500"
     "baseline -B 700"
     "baseline -B 1000"
-
     # Pause - vary pause_duration
     "pause -q 1"
     "pause -q 2"
     "pause -q 3"
     "pause -q 5"
-
     # Hybrid - vary minConsEmpty
     "hybrid -m 1000 -M 10 -g 1000"
     "hybrid -m 10000 -M 10 -g 1000"
-
-
     # Hybrid - vary maxIntTimeout
     "hybrid -m 10000 -M 50 -g 1000"
     "hybrid -m 10000 -M 100 -g 1000"
     "hybrid -m 10000 -M 1000 -g 1000"
-
-
     # Hybrid - vary gracePollCount
     "hybrid -m 10000 -M 10 -g 1000"
     "hybrid -m 10000 -M 10 -g 2000"
     "hybrid -m 10000 -M 10 -g 5000"
-
-
     # Interrupt-only (no extra flags)
     "interrupt-only"
+)
+
+EXPERIMENTS=(
+    # Baseline - vary baseline_pause_duration
+    "baseline -B 30"
+    "baseline -B 50"
 )
 
 ############################################################
@@ -106,11 +104,15 @@ exec > >(tee -a "$WRAPPER_LOG") 2>&1
 echo "========== Parameter sweep started at $(date) =========="
 
 
-TARGET_FREQUENCIES=(1200000 1400000 1600000 1800000 2000000 2200000 2400000)
+TARGET_FREQUENCIES_BIG=(1200000 1400000 1600000 1800000 2000000 2200000 2400000)
+TARGET_FREQUENCIES=(1200000 1400000)
 
 
 for target_freq in "${TARGET_FREQUENCIES[@]}"; do
     sudo $FREQ_SCRIPT --enable-cstates $target_freq $target_freq
+
+    echo "=== === === === === === ==="
+    echo "Starting iterating on userspace governor with frequency $target_freq"
 
     for traffic in "${TRAFFICS[@]}"; do
         # Extract the traffic's own name from the -n flag (e.g., "turbo_tuned_tlogn")
@@ -122,6 +124,9 @@ for target_freq in "${TARGET_FREQUENCIES[@]}"; do
         fi
         # Fallback if no name was given
         [[ -z "$traffic_name" ]] && traffic_name="traffic"
+
+        echo "--- --- --- --- ---"
+        echo "Starting iterating on traffic $traffic"
 
         for exp in "${EXPERIMENTS[@]}"; do
             read -r type extra_flags <<< "$exp"
@@ -141,8 +146,10 @@ for target_freq in "${TARGET_FREQUENCIES[@]}"; do
 
             echo "Finished. Sleeping $SLEEP_BETWEEN seconds..."
             sleep "$SLEEP_BETWEEN"
+            echo "Finished sleeping ."
         done
     done
+    echo "Finished iterating on userspace governor with frequency $target_freq"
 done
 
 
