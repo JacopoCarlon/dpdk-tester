@@ -142,7 +142,7 @@ for target_freq in "${TARGET_FREQUENCIES[@]}"; do
 
             # Construct and execute the command, adding -n $suffix
             cmd="$AUTO_SCRIPT $traffic -t $type $extra_flags -n $suffix"
-            eval "sudo $cmd"   # eval is safe here; variables are controlled
+            eval "$cmd"   # eval is safe here; variables are controlled
 
             echo "Finished. Sleeping $SLEEP_BETWEEN seconds..."
             sleep "$SLEEP_BETWEEN"

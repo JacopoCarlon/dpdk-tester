@@ -1,6 +1,8 @@
 #!/bin/bash
 # automated_measurements.sh - Complete measurement automation script for Server A
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 ####################
 # Configuration Section
 ####################
