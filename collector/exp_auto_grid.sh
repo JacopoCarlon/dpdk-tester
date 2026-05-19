@@ -2,6 +2,10 @@
 # automated_measurements.sh - Complete measurement automation script for Server A
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+## this path should be something like 
+## /home/jcarlon/zzz_test/dpdk-tester/collector
+## and we expect dpdk to be in /home/jcarlon/zzz_test/dpdk
+
 
 ####################
 # Configuration Section
@@ -13,9 +17,15 @@ SERVER_B_HOST="cplex3"
 SERVER_B_SCRIPT_DIR="/home/jcarlon/test/dpdk-tester/generator"
 # Server A Configuration
 ##  L3FWD_PATH="/home/jcarlon/zzz_test/dpdk/build/examples/dpdk-l3fwd-power"
-L3FWD_PATH="${SCRIPT_DIR}/../dpdk/build/examples/dpdk-l3fwd-power"
-RAPL_SCRIPT="${SCRIPT_DIR}/collector/run_rapl.sh"
+L3FWD_PATH="${SCRIPT_DIR}/../../dpdk/build/examples/dpdk-l3fwd-power"
+RAPL_SCRIPT="${SCRIPT_DIR}/run_rapl.sh"
 RESULTS_DIR="${SCRIPT_DIR}/res" 
+MEASUREMENT_DURATION=30
+MAX_BITRATE=10000000000  # 10 Gbps in bits/sec
+
+
+
+
 
 ##  ##  ##  
 ##  ##  # UNIPI whiskey-lace config:
@@ -27,9 +37,48 @@ RESULTS_DIR="${SCRIPT_DIR}/res"
 ##  ##  L3FWD_PATH="/home/carlon/dpdk/build/examples/dpdk-l3fwd-power"
 ##  ##  RAPL_SCRIPT="/home/carlon/measurements/run_rapl.sh"
 ##  ##  RESULTS_DIR="/home/carlon/measurements/results"
+##  ##  MEASUREMENT_DURATION=30
+##  ##  MAX_BITRATE=400000000000  # 40 Gbps in bits/sec
 
-MEASUREMENT_DURATION=30
-MAX_BITRATE=10000000000  # 10 Gbps in bits/sec
+
+
+
+
+
+
+
+check_local_paths() {
+    echo "Checking local paths on Server A..."
+
+    if [ ! -f "$L3FWD_PATH" ]; then
+        echo "ERROR: L3FWD_PATH not found: $L3FWD_PATH"
+        echo "Make sure the DPDK l3fwd-power binary has been built."
+        exit 1
+    fi
+
+    if [ ! -f "$RAPL_SCRIPT" ]; then
+        echo "ERROR: RAPL_SCRIPT not found: $RAPL_SCRIPT"
+        exit 1
+    fi
+    if [ ! -x "$RAPL_SCRIPT" ]; then
+        echo "ERROR: RAPL_SCRIPT is not executable: $RAPL_SCRIPT"
+        exit 1
+    fi
+    echo "  ✓ run_rapl.sh script found and is executable"
+
+    if [ ! -d "$RESULTS_DIR" ]; then
+        echo "Creating results directory: $RESULTS_DIR"
+        mkdir -p "$RESULTS_DIR" || {
+            echo "ERROR: Cannot create RESULTS_DIR: $RESULTS_DIR"
+            exit 1
+        }
+    fi
+    echo "  ✓ results directory ready: $RESULTS_DIR"
+    echo ""
+}
+
+check_local_paths
+
 
 # --- Pattern configuration ---
 PATTERN="uniform"
