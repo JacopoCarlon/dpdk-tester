@@ -133,14 +133,17 @@ NAME=""                # Optional experiment name (appended to filename)
 
 
 # --- Type Configuration --- 
-## TYPES=("baseline" "interrupt-only" "pause" "hybrid" )
-TYPES=("baseline")
+TYPES=("baseline" "interrupt-only" "pause" "hybrid" )
+# TYPES=("baseline")
 
 minConsEmpty=10000
 maxIntTimeout=10
 gracePollCount=1000
+baseline_pause_duration=50
+pause_duration=1
 
 ## ## sudo chrt -f 99 ./build/examples/dpdk-l3fwd-power -l 0 -- --pmd-mgmt=baseline --busypolling_pause_duration_ns=50    -p 0x3 --config="(0,0,0),(1,0,0)"
+
 
 DPDK_STARTUP_DELAY=5
 start_l3fwd() {
@@ -151,7 +154,8 @@ start_l3fwd() {
     ## sudo sysctl kernel.sched_rt_runtime_us=-1
     case $mode in
         baseline)
-            sudo chrt -f 99  $L3FWD_PATH -l $DPDK_CORE_OPTION -- --pmd-mgmt=baseline --busypolling_pause_duration_ns=50  -p 0x3 --config=$DPDK_QUEUE_CONFIG > "$RESULTS_DIR/l3fwd_baseline.log" 2>&1 &
+            # baseline_pause_duration=$2
+            sudo chrt -f 99  $L3FWD_PATH -l $DPDK_CORE_OPTION -- --pmd-mgmt=baseline --busypolling_pause_duration_ns=$baseline_pause_duration  -p 0x3 --config=$DPDK_QUEUE_CONFIG > "$RESULTS_DIR/l3fwd_baseline.log" 2>&1 &
             L3FWD_PID=$!
             sleep $DPDK_STARTUP_DELAY
             ;;
@@ -168,7 +172,6 @@ start_l3fwd() {
             ;;
         pause)
             # pause_duration=$2
-            pause_duration=1
             sudo chrt -f 99  $L3FWD_PATH -l $DPDK_CORE_OPTION -- --pmd-mgmt=pause --pause-duration=$pause_duration -p 0x3 --config=$DPDK_QUEUE_CONFIG > "$RESULTS_DIR/l3fwd.log" 2>&1 &
             L3FWD_PID=$!
             sleep $DPDK_STARTUP_DELAY
@@ -350,11 +353,21 @@ run_latency_test() {
         hybrid_params_suffix="_Hybrid_minConE${minConsEmpty}_maxIntT${maxIntTimeout}_gracePollC${gracePollCount}"
     fi
 
+    local baseline_params_suffix=""
+    if [[ "$type" == "baseline" ]]; then
+        baseline_params_suffix="_Baseline_pauseDuration${baseline_pause_duration}"
+    fi
+
+    local pause_params_suffix=""
+    if [[ "$type" == "pause" ]]; then
+        pause_params_suffix="_PauseDuration${pause_duration}"
+    fi
+
 
 
     # Update filename template with pattern parameters
     local pattern_str=$(generate_pattern_string $pattern)
-    local base_name="${RESULTS_DIR}/${type}_${pattern}${pattern_str}_${BURST_SIZE}pkt_${size}B_${byterate}b${hybrid_params_suffix}"
+    local base_name="${RESULTS_DIR}/${type}_${pattern}${pattern_str}_${BURST_SIZE}pkt_${size}B_${byterate}b${hybrid_params_suffix}${pause_params_suffix}${baseline_params_suffix}"
 
     if [[ -n "$NAME" ]]; then
         base_name="${base_name}_${NAME}"
