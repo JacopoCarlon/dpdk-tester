@@ -31,8 +31,6 @@ MEASUREMENT_DURATION=30
 MAX_BITRATE=100000000000  # 100 Gbps in bits/sec
 
 
-
-
 # --- Pattern configuration ---
 PATTERN="uniform"
 PATTERN_PARAMS=""
@@ -54,7 +52,6 @@ LOGNORMAL_OFF_SIGMA=""
 # TLOGN specific parameters
 TLOGN_RATE_MU=""
 TLOGN_RATE_SIGMA=""
-
 
 
 # --- Size configuration ---
@@ -130,12 +127,11 @@ EXTRA_ARGS=""          # Positional parameters for custom patterns
 NAME=""                # Optional experiment name (appended to filename)
 
 
-
-
-# --- Type Configuration --- 
+# --- Type Configuration ---
 TYPES=("baseline" "interrupt-only" "pause" "hybrid" )
-# TYPES=("baseline")
 
+# --- Tunable DPDK Parameters ---
+# These can be overridden via CLI flags (see getopts below)
 minConsEmpty=10000
 maxIntTimeout=10
 gracePollCount=1000
@@ -154,7 +150,6 @@ start_l3fwd() {
     ## sudo sysctl kernel.sched_rt_runtime_us=-1
     case $mode in
         baseline)
-            # baseline_pause_duration=$2
             sudo chrt -f 99  $L3FWD_PATH -l $DPDK_CORE_OPTION -- --pmd-mgmt=baseline --busypolling_pause_duration_ns=$baseline_pause_duration  -p 0x3 --config=$DPDK_QUEUE_CONFIG > "$RESULTS_DIR/l3fwd_baseline.log" 2>&1 &
             L3FWD_PID=$!
             sleep $DPDK_STARTUP_DELAY
@@ -171,7 +166,6 @@ start_l3fwd() {
             sleep $DPDK_STARTUP_DELAY
             ;;
         pause)
-            # pause_duration=$2
             sudo chrt -f 99  $L3FWD_PATH -l $DPDK_CORE_OPTION -- --pmd-mgmt=pause --pause-duration=$pause_duration -p 0x3 --config=$DPDK_QUEUE_CONFIG > "$RESULTS_DIR/l3fwd.log" 2>&1 &
             L3FWD_PID=$!
             sleep $DPDK_STARTUP_DELAY
@@ -179,7 +173,7 @@ start_l3fwd() {
         scale)
             scale_freq_min=$2
             scale_freq_max=$3
-            max_empty_polls=$4 
+            max_empty_polls=$4
             sudo chrt -f 99  $L3FWD_PATH -l $DPDK_CORE_OPTION -- --pmd-mgmt=scale --pause-duration=1    -p 0x3 --config=$DPDK_QUEUE_CONFIG > "$RESULTS_DIR/l3fwd.log" 2>&1 &
             L3FWD_PID=$!
             sleep $DPDK_STARTUP_DELAY
@@ -243,36 +237,30 @@ generate_pattern_string() {
 }
 
 
-
-
-
-
 run_latency_test() {
     local size=$1
     local pattern=$2
     local type=$3
 
-    ## rate is gotten only if param is not sawtooth !
     local rate_param=""
     local onoff_params=""
     local burst_param=""
     local byterate=0
     local pattern_specific_params=""
-    
+
     # Handle rate parameters based on pattern
     if [[ "$pattern" == "sawtooth" ]]; then
         local rate=$SAWTOOTH_END
         byterate=$((size * SAWTOOTH_END * 8))
-        rate_param=""  
+        rate_param=""
         burst_param=""
     elif [[ "$pattern" == "burst" ]]; then
-        local rate= 1
+        local rate=1
         byterate=$((size * rate * 8))
-        rate_param=""  
+        rate_param=""
         burst_param=" -b $BURST_SIZE"
     elif [[ "$pattern" == "onoff" ]]; then
         local rate=$4
-        # Validate required parameters
         [[ -z "$ONOFF_TON" || -z "$ONOFF_TOFF" || -z "$RATES" ]] && \
             { echo "ON/OFF pattern requires -U and -N parameters"; exit 1; }
         byterate=$((size * rate * 8))
@@ -288,7 +276,7 @@ run_latency_test() {
         ## <POISSON_LAMBDA> is number of bursts per second
         ## <POISSON_BURST> is bumber of packets per burst
         ## <size> is number of bytes per packet
-        rate_param=""  
+        rate_param=""
         burst_param=""
         onoff_params=""
         pattern_specific_params="-P $POISSON_LAMBDA -k $POISSON_BURST"
@@ -297,7 +285,7 @@ run_latency_test() {
             echo "Error: DC requires -D (base), -F (burst), -G (duration), -I (interval)"
             exit 1
         fi
-        rate_param=""  
+        rate_param=""
         burst_param=""
         onoff_params=""
         pattern_specific_params="-D $DC_BASE_RATE -F $DC_BURST_RATE -G $DC_BURST_DURATION -I $DC_BURST_INTERVAL"
@@ -315,7 +303,7 @@ run_latency_test() {
             echo "Error: TLOGN requires -w (ON_MU), -x (ON_SIGMA), -y (OFF_MU), -z (OFF_SIGMA), -W (RATE_MU), -X (RATE_SIGMA)"
             exit 1
         fi
-        byterate=$((size * 1000000 ))  # Placeholder, actual rate depends on lognormal distribution
+        byterate=$((size * 1000000))    # Placeholder, actual rate depends on lognormal distribution
         pattern_specific_params="-T $LOGNORMAL_ON_MU $LOGNORMAL_ON_SIGMA $LOGNORMAL_OFF_MU $LOGNORMAL_OFF_SIGMA $TLOGN_RATE_MU $TLOGN_RATE_SIGMA"
         rate_param=""
         burst_param=""
@@ -325,11 +313,11 @@ run_latency_test() {
         # Nominal bitrate (approx 1 Mpps) – adjust if needed
         byterate=$((size * 1000000 * 8))
         rate_param=""
-        burst_param=" -B $BURST_SIZE"   # include burst size
+        burst_param=" -B $BURST_SIZE"       # include burst size
         onoff_params=""
     elif [[ "$pattern" == "gaming" ]]; then
         pattern_specific_params="$EXTRA_ARGS"
-        byterate=$((size * 1000000 * 8))   # nominal 1 Mpps
+        byterate=$((size * 1000000 * 8))    # nominal 1 Mpps
         rate_param=""
         burst_param=" -B $BURST_SIZE"
         onoff_params=""
@@ -337,17 +325,16 @@ run_latency_test() {
         local rate=$4
         byterate=$((size * rate * 8))
         rate_param="-r $rate"
-        burst_param=" -B $BURST_SIZE" 
+        burst_param=" -B $BURST_SIZE"
     fi
-    
-    # Skip configurations exceeding 10Gbps
+
+    # Skip configurations exceeding MAX_BITRATE
     if (( byterate > MAX_BITRATE )); then
-        echo "Skipping configuration: ${size}B @ ${rate}pps = $((byterate/1000000))Mbps (>10Gbps)"
-        return 
+        echo "Skipping configuration: ${size}B @ ${rate}pps = $((byterate/1000000))Mbps (>limit)"
+        return
     fi
 
-    # Generate filenames
-
+    # Generate per-mode parameter suffixes for filenames
     local hybrid_params_suffix=""
     if [[ "$type" == "hybrid" ]]; then
         hybrid_params_suffix="_Hybrid_minConE${minConsEmpty}_maxIntT${maxIntTimeout}_gracePollC${gracePollCount}"
@@ -362,7 +349,6 @@ run_latency_test() {
     if [[ "$type" == "pause" ]]; then
         pause_params_suffix="_PauseDuration${pause_duration}"
     fi
-
 
 
     # Update filename template with pattern parameters
@@ -381,11 +367,11 @@ run_latency_test() {
     echo "============================================================"
     echo "[$(date +%T)] Starting test: Type=$type, Pattern=$pattern, Size=${size}B"
     echo "           Bitrate: $((byterate/1000000)) Mbps"
+    echo "           minConsEmpty=$minConsEmpty  maxIntTimeout=$maxIntTimeout  gracePollCount=$gracePollCount"
+    echo "           baseline_pause_duration=$baseline_pause_duration  pause_duration=$pause_duration"
     echo "============================================================"
 
     # Start latency test on Server B
-
-
     ssh $SSH_OPTS ${SERVER_B_USER}@${SERVER_B_HOST} "\
 	sudo pkill latency_test || true ; \
         sudo rm -f $remote_log $remote_pid ; \
@@ -401,11 +387,9 @@ run_latency_test() {
 
     sleep $INITIAL_WAIT
 
-
     # Start power measurement on Server A
     echo "[$(date +%T)] Starting power measurement..."
     $RAPL_SCRIPT -y -r -c $((MEASUREMENT_DURATION + 2)) -s 1 "$power_file"
-
 
     # Stop latency test gracefully
     echo "[$(date +%T)] Stopping latency test and collecting results..."
@@ -419,8 +403,6 @@ run_latency_test() {
 	sleep 3 && \
 	sudo rm -f $remote_pid"
 
-
-    # Extra assurance wait
     sleep 5
 
     # Copy latency log with retries
@@ -436,26 +418,27 @@ run_latency_test() {
         sleep 3
     done
 
-
     # Cleanup
     ssh $SSH_OPTS ${SERVER_B_USER}@${SERVER_B_HOST} "sudo rm -f $remote_log" >/dev/null 2>&1
 
     # Validation
     [ -s "$power_file" ] || echo "Warning: Power measurement failed for ${base_name}"
     [ -s "$latency_file" ] || echo "Warning: Latency log not captured for ${base_name}"
-    
+
     sleep $COOLDOWN
 }
 
 main() {
     mkdir -p "$RESULTS_DIR"
     echo "Saving all results to: $RESULTS_DIR"
+    echo "Active DPDK parameters:"
+    echo "  minConsEmpty=$minConsEmpty  maxIntTimeout=$maxIntTimeout  gracePollCount=$gracePollCount"
+    echo "  baseline_pause_duration=$baseline_pause_duration  pause_duration=$pause_duration"
 
     for type in "${TYPES[@]}"; do
 
         start_l3fwd $type
 
-        # Pattern-specific handling
         case $PATTERN in
             sawtooth)
                 # Sawtooth runs once per size with pattern parameters
@@ -463,7 +446,6 @@ main() {
                     run_latency_test $size $PATTERN $type
                 done
                 ;;
-
             burst)
                 # burst runs once per size with pattern parameters
                 for size in "${SIZES[@]}"; do
@@ -471,8 +453,8 @@ main() {
                 done
                 ;;
             onoff)
-                # ON/OFF runs once per size with fixed rate
                 [[ -z "$RATES" ]] && { echo "ON/OFF pattern requires -r parameter"; exit 1; }
+                # ON/OFF runs once per size with fixed rate
                 for size in "${SIZES[@]}"; do
                     run_latency_test $size $PATTERN $type $ONOFF_RATE
                 done
@@ -480,7 +462,7 @@ main() {
             poisson|dc|lognormal|tlogn)
                 # ON/OFF runs once per size with fixed rate
                 for size in "${SIZES[@]}"; do
-                    run_latency_test $size $PATTERN $type 
+                    run_latency_test $size $PATTERN $type
                 done
                 ;;
             multipleExpLogn|web|gaming)
@@ -511,7 +493,7 @@ main() {
                 done
             ;;
         esac
-    
+
     stop_l3fwd
     done
 
@@ -522,16 +504,52 @@ main() {
 # Execution Section
 ####################
 
-while getopts "t:s:r:p:b:T:S:E:d:C:P:U:N:R:L:K:D:F:G:I:v:w:x:y:z:W:X:A:n:h" opt; do
+usage() {
+    cat <<EOF
+Usage: $0 [options]
+
+Pattern/size options:
+  -t TYPE       DPDK mode (baseline|interrupt-only|pause|hybrid)
+  -s SIZE       Packet size(s)
+  -r RATE       Rate(s)
+  -p PATTERN    Traffic pattern
+  -b BURST      Burst size
+  -A ARGS       Extra args for custom patterns (web/gaming/multipleExpLogn)
+  -n NAME       Experiment name suffix
+
+Tunable DPDK parameters:
+  -m VALUE      minConsEmpty            (default: $minConsEmpty)
+  -M VALUE      maxIntTimeout           (default: $maxIntTimeout)
+  -g VALUE      gracePollCount          (default: $gracePollCount)
+  -B VALUE      baseline_pause_duration (default: $baseline_pause_duration)
+  -q VALUE      pause_duration          (default: $pause_duration)
+
+Pattern-specific options:
+  -T PAUSE_TIME        Burst pause time
+  -S/-E/-d/-C          Sawtooth: start/end/duration/steps
+  -U/-N/-R             ON/OFF: ton/toff/rate
+  -L/-K                Poisson: lambda/burst
+  -D/-F/-G/-I          DC: base/burst/duration/interval
+  -v/-w/-x/-y/-z       LogNormal: rate/on_mu/on_sigma/off_mu/off_sigma
+  -W/-X                TLOGN: rate_mu/rate_sigma
+  -P PARAMS            Generic extra pattern params
+
+  -h            Show this help
+EOF
+    exit 0
+}
+
+while getopts "t:s:r:p:b:T:S:E:d:C:P:U:N:R:L:K:D:F:G:I:v:w:x:y:z:W:X:A:n:m:M:g:B:q:h" opt; do
     case $opt in
+        # --- original options ---
         t) TYPES=("$OPTARG") ;;
         s) SIZES=("$OPTARG") ;;
         r) RATES=("$OPTARG") ;;
         p) PATTERN="$OPTARG" ;;
         b) BURST_SIZE="$OPTARG" ;;
-        T) PAUSE_TIME="$OPTARG"  # For burst-pause
+        T) PAUSE_TIME="$OPTARG"
            PATTERN_PARAMS+="-t $PAUSE_TIME " ;;
-        S) SAWTOOTH_START="$OPTARG"  # For sawtooth
+        S) SAWTOOTH_START="$OPTARG"
            PATTERN_PARAMS+="-S $SAWTOOTH_START " ;;
         E) SAWTOOTH_END="$OPTARG"
            PATTERN_PARAMS+="-E $SAWTOOTH_END " ;;
@@ -548,7 +566,7 @@ while getopts "t:s:r:p:b:T:S:E:d:C:P:U:N:R:L:K:D:F:G:I:v:w:x:y:z:W:X:A:n:h" opt;
         F) DC_BURST_RATE="$OPTARG" ;;
         G) DC_BURST_DURATION="$OPTARG" ;;
         I) DC_BURST_INTERVAL="$OPTARG" ;;
-        P) PATTERN_PARAMS+="$OPTARG " ;;  # Generic pattern params
+        P) PATTERN_PARAMS+="$OPTARG " ;;
         v) LOGNORMAL_RATE="$OPTARG" ;;
         w) LOGNORMAL_ON_MU="$OPTARG" ;;
         x) LOGNORMAL_ON_SIGMA="$OPTARG" ;;
@@ -556,67 +574,57 @@ while getopts "t:s:r:p:b:T:S:E:d:C:P:U:N:R:L:K:D:F:G:I:v:w:x:y:z:W:X:A:n:h" opt;
         z) LOGNORMAL_OFF_SIGMA="$OPTARG" ;;
         W) TLOGN_RATE_MU="$OPTARG" ;;
         X) TLOGN_RATE_SIGMA="$OPTARG" ;;
-        A) EXTRA_ARGS="$OPTARG" ;;   # Extra arguments for custom patterns
-        n) NAME="$OPTARG" ;;         # Experiment name
-        h) echo "Usage: $0 [-t type] [-s size] [-r rate] [-A 'args'] [-n name]"; exit 0 ;;
-        *) echo "Invalid option"; exit 1 ;;
+        A) EXTRA_ARGS="$OPTARG" ;;
+        n) NAME="$OPTARG" ;;
+
+        # --- new tunable DPDK parameter flags ---
+        m) minConsEmpty="$OPTARG" ;;
+        M) maxIntTimeout="$OPTARG" ;;
+        g) gracePollCount="$OPTARG" ;;
+        B) baseline_pause_duration="$OPTARG" ;;
+        q) pause_duration="$OPTARG" ;;
+
+        h) usage ;;
+        *) echo "Invalid option: -$OPTARG"; usage; exit 1 ;;
     esac
 done
 
 
+# Pattern validation 
 case $PATTERN in
     sawtooth)
         if [[ -z $SAWTOOTH_START || -z $SAWTOOTH_END || -z $SAWTOOTH_DURATION || -z $SAWTOOTH_STEPS ]]; then
-            echo "Sawtooth pattern requires -S, -E, -d, -c parameters"
-            exit 1
-        fi
-        ;;
+            echo "Sawtooth pattern requires -S, -E, -d, -c parameters"; exit 1
+        fi ;;
     burst)
         if [[ -z $PAUSE_TIME ]]; then
-            echo "Burst-pause pattern requires -T parameter"
-            exit 1
-        fi
-        ;;
+            echo "Burst-pause pattern requires -T parameter"; exit 1
+        fi ;;
     onoff)
         if [[ -z "$ONOFF_TON" || -z "$ONOFF_TOFF" || -z "$RATES" ]]; then
-            echo "ON/OFF pattern requires -U, -N and -r parameters"
-            exit 1
-        fi
-        ;;
+            echo "ON/OFF pattern requires -U, -N and -r parameters"; exit 1
+        fi ;;
     poisson)
         if [[ -z "$POISSON_LAMBDA" || -z "$POISSON_BURST" ]]; then
-            echo "Poisson pattern requires -L (lambda) and -K (burst)"
-            exit 1
-        fi
-        ;;
+            echo "Poisson pattern requires -L (lambda) and -K (burst)"; exit 1
+        fi ;;
     dc)
         if [[ -z "$DC_BASE_RATE" || -z "$DC_BURST_RATE" || -z "$DC_BURST_DURATION" || -z "$DC_BURST_INTERVAL" ]]; then
-            echo "DC pattern requires -D (base), -F (burst), -G (duration), -I (interval)"
-            exit 1
-        fi
-        ;;
+            echo "DC pattern requires -D (base), -F (burst), -G (duration), -I (interval)"; exit 1
+        fi ;;
     lognormal)
         if [[ -z "$LOGNORMAL_RATE" || -z "$LOGNORMAL_ON_MU" || -z "$LOGNORMAL_ON_SIGMA" || -z "$LOGNORMAL_OFF_MU" || -z "$LOGNORMAL_OFF_SIGMA" ]]; then
-            echo "LogNormal pattern requires -v (rate), -w (ON_MU), -x (ON_SIGMA), -y (OFF_MU), -z (OFF_SIGMA)"
-            exit 1
-        fi
-        ;;
+            echo "LogNormal pattern requires -v, -w, -x, -y, -z parameters"; exit 1
+        fi ;;
     tlogn)
         if [[ -z "$LOGNORMAL_ON_MU" || -z "$LOGNORMAL_ON_SIGMA" || -z "$LOGNORMAL_OFF_MU" || -z "$LOGNORMAL_OFF_SIGMA" || -z "$TLOGN_RATE_MU" || -z "$TLOGN_RATE_SIGMA" ]]; then
-            echo "TLOGN pattern requires -w (ON_MU), -x (ON_SIGMA), -y (OFF_MU), -z (OFF_SIGMA), -W (RATE_MU), -X (RATE_SIGMA)"
-            exit 1
-	    fi
-        ;;
+            echo "TLOGN pattern requires -w, -x, -y, -z, -W, -X parameters"; exit 1
+        fi ;;
     multipleExpLogn|web|gaming)
         if [[ -z "$EXTRA_ARGS" ]]; then
-            echo "Pattern '$PATTERN' requires extra arguments via -A"
-            exit 1
-        fi
-        ;;
+            echo "Pattern '$PATTERN' requires extra arguments via -A"; exit 1
+        fi ;;
 esac
-
-   
-
 
 
 main 2>&1 | tee "${RESULTS_DIR}/measurement_$(date +%Y%m%d_%H%M%S).log"
@@ -638,5 +646,4 @@ ssh $SSH_OPTS ${SERVER_B_USER}@${SERVER_B_HOST} \
 #   ./exp_auto_grid.sh -p web -s 256 -b 256 -A "1000000 8.37 1.37 100 2000000 6.17 2.36 50 2000000 1.1 2.0 55.0 7.69 0.033" -n turbo_tuned_web
 #       -> will run ./latency_test -l 2,4,6 -- -s 256 -p web -B 256 -- 1000000 8.37 1.37 100 2000000 6.17 2.36 50 2000000 1.1 2.0 55.0 7.69 0.033 
 #   
-
 
