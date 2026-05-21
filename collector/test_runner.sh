@@ -84,7 +84,7 @@ TRAFFICS=(
 ##  ##  ##      exit 0
 ##  ##  ##  }
 ############################################################
-EXPERIMENTS_BIG=(
+EXPERIMENTS=(
     # Baseline - vary baseline_pause_duration (nanoseconds)
     "baseline -B 1"
     "baseline -B 30"
@@ -133,7 +133,7 @@ EXPERIMENTS_BIG=(
 ## | PMD pause (clb_pause)    | --pause-duration                | ns (modified from upstream)   | 200 ns               |
 ## | Baseline pause           | --busypolling_pause_duration_ns | ns                            | 50 ns                |
 
-EXPERIMENTS=(
+EXPERIMENTS_SMOL=(
     # Baseline - vary baseline_pause_duration
     "baseline -B 30"
     "baseline -B 50"
@@ -146,8 +146,8 @@ exec > >(tee -a "$WRAPPER_LOG") 2>&1
 echo "========== Parameter sweep started at $(date) =========="
 
 
-TARGET_FREQUENCIES_BIG=(1200000 1400000 1600000 1800000 2000000 2200000 2400000)
-TARGET_FREQUENCIES=(1200000 1400000)
+TARGET_FREQUENCIES=(1200000 1400000 1600000 1800000 2000000 2200000 2400000)
+TARGET_FREQUENCIES_SMOL=(1200000 1400000)
 
 
 for target_freq in "${TARGET_FREQUENCIES[@]}"; do
