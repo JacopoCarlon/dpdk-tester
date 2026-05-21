@@ -13,8 +13,12 @@ WRAPPER_LOG="wrapper_$(date +%Y%m%d_%H%M%S).log"
 #    -t (type) and the tunable DPDK parameters (-m, -M, -g, -B, -q).
 #    Include -p, -s, -b, -n, and any pattern‑specific flags.
 ############################################################
-TRAFFICS=(
+# sudo ./latency_test -l 2,4,6 -- -B 32 -s 256 -p tlogn -T -16.812 0.336 -9.904 0.336 -14.509 1.386
+
+
+TRAFFICS_OLD=(
     # Example 1: TLOGN with name "turbo_tuned_tlogn"
+    # "-p tlogn -s 256 -b 256 -w -3.5 -x 0.1 -y -3.5 -z 0.1 -W -9.9 -X 0.1 -n turbo_tuned_tlogn"   
     "-p tlogn -s 256 -b 256 -w -3.5 -x 0.1 -y -3.5 -z 0.1 -W -9.9 -X 0.1 -n turbo_tuned_tlogn"
 
     # Example 2: ON/OFF with name "onoff_lowload"
@@ -22,6 +26,25 @@ TRAFFICS=(
 
     # Example 3: Uniform baseline (you can override rates via -r if needed)
     ## "-p uniform -s 256 -r 2440000 -b 32 -n uniform_baseline"
+)
+
+
+TRAFFICS=(
+    # Uniform
+    "-p uniform -s 256 -b 32 -r 2440000  -n uniform_baseline"
+
+    # TLOGN
+    # circa 5Gbps
+    "-p tlogn -s 256 -b 32 -w -3.5 -x 0.1 -y -3.5 -z 0.1 -W -9.9 -X 0.1 -n tlogn5G"
+    
+    # 30Gbps
+    # "-p tlogn -s 256 -b 256 -w -16.812 -x 0.336 -y -9.904 -z 0.336 -W -14.509 -X 0.386 -n tlogn33G"
+
+    # multipleExpLogn
+    '-p multipleExpLogn -s 256 -b 32 -A "350 0.006 14.45 0.35 100 5000000 25000000000" -n expLogn'
+
+    # Web
+    '-p web -s 256 -b 32 -A "1000000 8.37 1.37 100 2000000 6.17 2.36 50 2000000 1.1 2.0 55.0 7.69 0.033" -n webTrf'
 )
 
 ############################################################
@@ -62,7 +85,8 @@ TRAFFICS=(
 ##  ##  ##  }
 ############################################################
 EXPERIMENTS_BIG=(
-    # Baseline - vary baseline_pause_duration
+    # Baseline - vary baseline_pause_duration (nanoseconds)
+    "baseline -B 1"
     "baseline -B 30"
     "baseline -B 50"
     "baseline -B 100"
@@ -71,15 +95,27 @@ EXPERIMENTS_BIG=(
     "baseline -B 500"
     "baseline -B 700"
     "baseline -B 1000"
-    # Pause - vary pause_duration
+    "baseline -B 2000"
+    # Pause - vary pause_duration (nanoseconds)
     "pause -q 1"
     "pause -q 2"
     "pause -q 3"
-    "pause -q 5"
+    "pause -q 10"
+    "pause -q 30"
+    "pause -q 50"
+    "pause -q 100"
+    "pause -q 200"
+    "pause -q 300"
+    "pause -q 500"
+    "pause -q 1000"
+    "pause -q 1500"
+    "pause -q 2000"   
+    # Interrupt-only (no extra flags)
+    "interrupt-only"
     # Hybrid - vary minConsEmpty
     "hybrid -m 1000 -M 10 -g 1000"
     "hybrid -m 10000 -M 10 -g 1000"
-    # Hybrid - vary maxIntTimeout
+    # Hybrid - vary maxIntTimeout (microseconds)
     "hybrid -m 10000 -M 50 -g 1000"
     "hybrid -m 10000 -M 100 -g 1000"
     "hybrid -m 10000 -M 1000 -g 1000"
@@ -87,9 +123,15 @@ EXPERIMENTS_BIG=(
     "hybrid -m 10000 -M 10 -g 1000"
     "hybrid -m 10000 -M 10 -g 2000"
     "hybrid -m 10000 -M 10 -g 5000"
-    # Interrupt-only (no extra flags)
-    "interrupt-only"
 )
+
+## | Mode                     | Parameter                       | Unit                          | Default              |
+## |--------------------------|---------------------------------|-------------------------------|----------------------|
+## | Hybrid short sleep       | --max/min-small-sleep           | µs                            | 10–50 µs             |
+## | Hybrid interrupt timeout | --max-interrupt-timeout         | µs                            | 300 µs               |
+## | Interrupt-only           | (not configurable)              | µs                            | 1 or 300 µs hardcoded|
+## | PMD pause (clb_pause)    | --pause-duration                | ns (modified from upstream)   | 200 ns               |
+## | Baseline pause           | --busypolling_pause_duration_ns | ns                            | 50 ns                |
 
 EXPERIMENTS=(
     # Baseline - vary baseline_pause_duration
@@ -129,6 +171,8 @@ for target_freq in "${TARGET_FREQUENCIES[@]}"; do
         # Fallback if no name was given
         [[ -z "$traffic_name" ]] && traffic_name="traffic"
 
+        echo "--- --- --- --- --- --- --- --- ---"
+        echo "--- --- --- --- --- --- --- --- ---"
         echo "--- --- --- --- --- --- --- --- ---"
         echo "--- --- --- --- --- --- --- --- ---"
         echo "--- --- --- --- --- --- --- --- ---"

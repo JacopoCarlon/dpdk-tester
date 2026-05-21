@@ -1,0 +1,5 @@
+
+
+// TODO : mlockall(MCL_CURRENT | MCL_FUTURE)
+// TODO : hugepages che si setuppano a modo al reboot grub + update-grub !
+

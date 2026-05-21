@@ -1,5 +1,5 @@
 #!/bin/bash
-# automated_measurements.sh - Complete measurement automation script for Server A
+# exp_auto_grid.sh - Complete measurement automation script for Server A
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ## this path should be something like 
@@ -695,4 +695,18 @@ ssh $SSH_OPTS ${SERVER_B_USER}@${SERVER_B_HOST} \
 #   ./exp_auto_grid.sh -p web -s 256 -b 256 -A "1000000 8.37 1.37 100 2000000 6.17 2.36 50 2000000 1.1 2.0 55.0 7.69 0.033" -n turbo_tuned_web
 #       -> will run ./latency_test -l 2,4,6 -- -s 256 -p web -B 256 -- 1000000 8.37 1.37 100 2000000 6.17 2.36 50 2000000 1.1 2.0 55.0 7.69 0.033 
 #   
+
+
+
+## generator for tlogn: 
+## expected : 
+##     sudo ./latency_test -l 2,4,6 -- -B 32 -s 256 -p tlogn -T -16.812 0.336 -9.904 0.336 -14.509 1.386
+## 
+## Mean ON duration  = 0.000050 s (     50.00 us)
+## Mean OFF duration = 0.000050 s (     50.00 us)
+## Mean inter‑burst  = 0.000001 s (      1.00 us)
+## Expected packet rate (ON phase) = 32'000'000.0 pps
+## Long‑term average packet rate   = 16'000'000.0 pps
+
+
 

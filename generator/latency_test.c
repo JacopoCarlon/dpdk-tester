@@ -224,7 +224,7 @@ static struct {
             // DL parameters
             double dl_initial_a;
             double dl_initial_b;
-            double dl_arrival_a;         // Gumbel for DL inter‑arrival
+            double dl_arrival_a;         // Gumbel for DL inter-arrival
             double dl_arrival_b;
             double dl_size_a;
             double dl_size_b;
@@ -454,7 +454,7 @@ static double generate_lognormal(double mu, double sigma) {
 }
 
 
-/* Simple xorshift32 PRNG - returns a 32‑bit random number */
+/* Simple xorshift32 PRNG - returns a 32-bit random number */
 static inline uint32_t xorshift32(uint32_t *state) {
     uint32_t x = *state;
     x ^= x << 13;
@@ -465,13 +465,13 @@ static inline uint32_t xorshift32(uint32_t *state) {
 }
 
 
-/* Returns a uniform double in (0, 1] using the given per‑user state */
+/* Returns a uniform double in (0, 1] using the given per-user state */
 static inline double rand_double_per_user(uint32_t *state) {
     return (xorshift32(state) + 1.0) / (UINT32_MAX + 2.0);
 }
 
 
-/* Generate lognormal(mu, sigma) using per‑user RNG state */
+/* Generate lognormal(mu, sigma) using per-user RNG state */
 static double generate_lognormal_per_user(uint32_t *state, double mu, double sigma) {
     double u1 = rand_double_per_user(state);
     double u2 = rand_double_per_user(state);
@@ -481,7 +481,7 @@ static double generate_lognormal_per_user(uint32_t *state, double mu, double sig
 
 
 
-/* Generate Gumbel (largest extreme value) using per‑user RNG state */
+/* Generate Gumbel (largest extreme value) using per-user RNG state */
 static double generate_gumbel_per_user(uint32_t *state, double a, double b) {
     double u = rand_double_per_user(state);
     return a - b * log(-log(u));   // inverse CDF
@@ -533,14 +533,14 @@ static int lcore_send_multiple_exp_logn(__rte_unused void *arg) {
     uint64_t tsc_hz = rte_get_tsc_hz();
     uint64_t mel_send_empty_queues = 0;
     
-    // ---------- Per‑pattern static state (allocated once) ----------
+    // ---------- Per-pattern static state (allocated once) ----------
     static int initialized = 0;
     static struct multi_user_state {
         uint64_t next_event_time;   // TSC for next event
         uint64_t pending_packets;   // packets waiting to be sent
-        uint32_t rng_state;         // per‑user RNG state
+        uint32_t rng_state;         // per-user RNG state
     } *users = NULL;
-    static uint32_t *heap = NULL;           // min‑heap of user indices (by next_event_time)
+    static uint32_t *heap = NULL;           // min-heap of user indices (by next_event_time)
     static int heap_size = 0;
     static uint32_t *active_queue = NULL;   // circular queue of users with pending packets
     static int active_head = 0, active_tail = 0;
@@ -552,7 +552,7 @@ static int lcore_send_multiple_exp_logn(__rte_unused void *arg) {
     static uint64_t tsc_per_packet;          // TSC per packet at target rate
     static uint64_t total_pending_packets = 0;
     
-    // ---------- One‑time initialisation ----------
+    // ---------- One-time initialisation ----------
     if (!initialized) {
         num_users = traffic_config.params.multi_exp_logn.num_users;
         exp_rate = traffic_config.params.multi_exp_logn.exp_rate;
@@ -597,7 +597,7 @@ static int lcore_send_multiple_exp_logn(__rte_unused void *arg) {
             heap[i] = i;
         }
         
-        /* Build min‑heap (simple insertion) */
+        /* Build min-heap (simple insertion) */
         heap_size = num_users;
         for (int i = 1; i < num_users; i++) {
             int j = i;
@@ -870,7 +870,7 @@ static int lcore_send_web_traffic(__rte_unused void *arg) {
 
 
 
-    // Per‑user state
+    // Per-user state
     enum web_wait_type {
         WEB_WAIT_READING = 0,
         WEB_WAIT_PARSING = 1
@@ -879,7 +879,7 @@ static int lcore_send_web_traffic(__rte_unused void *arg) {
     struct web_user_state {
         uint64_t next_event_time;          // time of next wait (valid when state==0)
         uint64_t pending_packets;          // packets remaining in current download
-        uint32_t rng_state;                // per‑user RNG
+        uint32_t rng_state;                // per-user RNG
         uint8_t state;                      // 0 = waiting, 1 = downloading
         uint8_t wait_type;                  // when waiting: which wait we are in
         uint64_t post_wait_duration_tsc;    // when downloading: duration of next wait
@@ -930,7 +930,7 @@ static int lcore_send_web_traffic(__rte_unused void *arg) {
             heap[i] = i;
         }
 
-        // Build min‑heap
+        // Build min-heap
         heap_size = num_users;
         for (int i = 1; i < num_users; i++) {
             int j = i;
@@ -1204,16 +1204,16 @@ static int lcore_send_game_traffic(__rte_unused void *arg) {
     uint64_t seq_num = 0;
     uint64_t tsc_hz = rte_get_tsc_hz();
 
-    // Per‑user state
+    // Per-user state
     struct game_user_state {
         uint64_t next_send_time;   // TSC for next packet generation
-        uint32_t rng_state;        // per‑user RNG
+        uint32_t rng_state;        // per-user RNG
         uint8_t pending;            // 1 if packet ready to send, else 0
     };
 
     static int initialized = 0;
     static struct game_user_state *users = NULL;
-    static uint32_t *heap = NULL;           // min‑heap of user indices (users with pending == 0)
+    static uint32_t *heap = NULL;           // min-heap of user indices (users with pending == 0)
     static int heap_size = 0;
     static uint32_t *active_queue = NULL;   // circular queue of users with pending == 1
     static int active_head = 0, active_tail = 0;
@@ -1259,7 +1259,7 @@ static int lcore_send_game_traffic(__rte_unused void *arg) {
         } else {
             // With variable packet sizes, the rate limiter based on packets is inaccurate.
             // We keep it simple: use the configured PACKET_SIZE (constant) for pps calculation.
-            // This yields an approximate bitrate. For accurate byte‑based limiting, a more
+            // This yields an approximate bitrate. For accurate byte-based limiting, a more
             // sophisticated approach would be needed.
             target_pps = target_bps / (8 * WIRE_SIZE(PACKET_SIZE));
             if (target_pps == 0) target_pps = 1;
@@ -1293,7 +1293,7 @@ static int lcore_send_game_traffic(__rte_unused void *arg) {
             heap[i] = i;
         }
 
-        // Build min‑heap
+        // Build min-heap
         heap_size = num_users;
         for (int i = 1; i < heap_size; i++) {
             int j = i;
@@ -1307,8 +1307,8 @@ static int lcore_send_game_traffic(__rte_unused void *arg) {
 
         initialized = 1;
         printf("\nGaming traffic pattern initialized with %u users, direction %s, target_bps=%lu\n"
-               "  UL: initial=[%.3f,%.3f]s, arrival_type=%s, inter‑arrival=(%.3f,%.3f), size=(%.1f,%.1f)\n"
-               "  DL: initial=[%.3f,%.3f]s, inter‑arrival=(%.3f,%.3f), size=(%.1f,%.1f)\n",
+               "  UL: initial=[%.3f,%.3f]s, arrival_type=%s, inter-arrival=(%.3f,%.3f), size=(%.1f,%.1f)\n"
+               "  DL: initial=[%.3f,%.3f]s, inter-arrival=(%.3f,%.3f), size=(%.1f,%.1f)\n",
                num_users, (direction == 0 ? "UL" : "DL"), target_bps,
                ul_initial_a, ul_initial_b, ul_arrival_type ? "Gumbel" : "Deterministic",
                ul_arrival_a, ul_arrival_b, ul_size_a, ul_size_b,
@@ -1375,7 +1375,7 @@ static int lcore_send_game_traffic(__rte_unused void *arg) {
                 }
                 // Take this user
                 active_head = (active_head + 1) % num_users;
-                in_queue[u] = false;   // will be re‑added later if packet fails
+                in_queue[u] = false;   // will be re-added later if packet fails
                 user_ids[filled] = u;
 
                 // Generate packet size (IP packet length) using Gumbel
@@ -1663,6 +1663,15 @@ static int lcore_send(__rte_unused void *arg) {
                traffic_config.params.dclognormal.on_sigma,
                traffic_config.params.dclognormal.off_mu,
                traffic_config.params.dclognormal.off_sigma);
+
+        double mean_on_dc = exp(traffic_config.params.dclognormal.on_mu + 
+                                traffic_config.params.dclognormal.on_sigma * traffic_config.params.dclognormal.on_sigma / 2.0);
+        double mean_off_dc = exp(traffic_config.params.dclognormal.off_mu + 
+                                traffic_config.params.dclognormal.off_sigma * traffic_config.params.dclognormal.off_sigma / 2.0);
+
+        printf("  Mean ON duration  = %.6f s (%10.2f us)\n", mean_on_dc, mean_on_dc * 1e6);
+        printf("  Mean OFF duration = %.6f s (%10.2f us)\n", mean_off_dc, mean_off_dc * 1e6);
+        printf("  (Formula: mean = exp(mu + sigma^2/2))\n");
     }
 
     if (traffic_config.pattern == PATTERN_TLOGN) {
@@ -1699,6 +1708,24 @@ static int lcore_send(__rte_unused void *arg) {
                traffic_config.params.tlogn.rate_sigma,
                traffic_config.params.tlogn.burst_size
             );
+
+        double mean_on = exp(traffic_config.params.tlogn.on_mu + 
+                            traffic_config.params.tlogn.on_sigma * traffic_config.params.tlogn.on_sigma / 2.0);
+        double mean_off = exp(traffic_config.params.tlogn.off_mu + 
+                            traffic_config.params.tlogn.off_sigma * traffic_config.params.tlogn.off_sigma / 2.0);
+        double mean_inter = exp(traffic_config.params.tlogn.rate_mu + 
+                                traffic_config.params.tlogn.rate_sigma * traffic_config.params.tlogn.rate_sigma / 2.0);
+        double duty_cycle = (mean_off > 0) ? mean_on / (mean_on + mean_off) : 1.0;
+        double pps_on = traffic_config.params.tlogn.burst_size / mean_inter;
+        double pps_long = pps_on * duty_cycle;
+
+        printf("  Mean ON duration  = %.6f s (%10.2f us)\n", mean_on, mean_on * 1e6);
+        printf("  Mean OFF duration = %.6f s (%10.2f us)\n", mean_off, mean_off * 1e6);
+        printf("  Mean inter-burst  = %.6f s (%10.2f us)\n", mean_inter, mean_inter * 1e6);
+        printf("  Expected packet rate (ON phase) = %.1f pps\n", pps_on);
+        printf("  Long-term average packet rate   = %.1f pps\n", pps_long);
+        printf("  (Formula: mean = exp(mu + sigma^2/2))\n");
+    
     }
 
     if (traffic_config.pattern == PATTERN_MULTI_EXP_LOGN) {
@@ -1937,7 +1964,7 @@ static int lcore_send(__rte_unused void *arg) {
                     // Time to send a burst
                     burst_to_send = traffic_config.params.tlogn.burst_size;
                     
-                    // Schedule next burst using lognormal inter‑burst interval
+                    // Schedule next burst using lognormal inter-burst interval
                     double interval = generate_lognormal(
                         traffic_config.params.tlogn.rate_mu,
                         traffic_config.params.tlogn.rate_sigma
@@ -2734,7 +2761,13 @@ static void usage(const char *prgname) {
             "  Uniform:     -p uniform -r 1000000\n"
             "  Burst:       -p burst -b 1000 -t 0.5\n"
             "  DClognormal: -p lognormal -L 1000000 0.061385 0.1 0.081732 0.1\n"
+            "  DClognormal: -p lognormal -L 1000000 0.061385 0.1 0.081732 0.1\n"
+"               (Note: mu,sigma are for ln(duration_in_seconds).\n"
+"                Mean duration = exp(mu + sigma^2/2) seconds)\n"
             "  tlogn:       -B 32 -s 256 -p tlogn -T 0.061385 0.1 0.081732 0.1 0.011119 0.1\n"
+            "  tlogn:       -B 32 -s 256 -p tlogn -T 0.061385 0.1 0.081732 0.1 0.011119 0.1\n"
+"               (Note: mu,sigma are for ln(duration_in_seconds).\n"
+"                Mean duration = exp(mu + sigma^2/2) seconds)\n"
             "  Sawtooth:    -p sawtooth -S 1e6 -E 10e6 -d 1 -c 5\n"
             "  \n multipleExpLogn: -p multipleExpLogn num_users exp_rate mu sigma min_bytes max_bytes [bitrate]\n"
             "  FTP (3GPP defaults): -p multipleExpLogn -- 350  0.006  14.45  0.35 100 5000000 25000000000\n"
@@ -3339,6 +3372,13 @@ int main(int argc, char **argv) {
 
 
 
-// TODO : mlockall(MCL_CURRENT | MCL_FUTURE)
-// TODO : hugepages che si setuppano a modo al reboot grub + update-grub !
+// // expected : 
+// //     sudo ./latency_test -l 2,4,6 -- -B 32 -s 256 -p tlogn -T -16.812 0.336 -9.904 0.336 -14.509 1.386
+// // 
+// // Mean ON duration  = 0.000050 s (     50.00 us)
+// // Mean OFF duration = 0.000050 s (     50.00 us)
+// // Mean inter‑burst  = 0.000001 s (      1.00 us)
+// // Expected packet rate (ON phase) = 32'000'000.0 pps
+// // Long‑term average packet rate   = 16'000'000.0 pps
+
 
