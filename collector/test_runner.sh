@@ -31,7 +31,7 @@ TRAFFICS_OLD=(
 
 TRAFFICS=(
     # Uniform
-    "-p uniform -s 256 -b 32 -r 2440000  -n uniform_baseline"
+    "-p uniform -s 256 -b 32 -r 2440000 -n uniform_baseline"
 
     # TLOGN
     # circa 5Gbps
@@ -189,6 +189,16 @@ for target_freq in "${TARGET_FREQUENCIES[@]}"; do
             echo "Experiment: type=$type, flags=$extra_flags"
             echo "Suffix: $suffix"
             echo "----------------------------------------------------------------"
+
+            echo "---"
+            echo "killing any leftover <dpdk-l3fwd-power> instance on server A before starting a new one"
+            # Kill any leftover instance before starting a new one
+            sudo pkill -TERM -f "dpdk-l3fwd-power" 2>/dev/null || true
+            sleep 5   
+            sudo killall -9 dpdk-l3fwd-power 2>/dev/null || true
+            sleep 5 
+            sudo rm -rf /var/run/dpdk/* /dev/shm/dpdk* 2>/dev/null || true
+            sleep 3
 
             # Construct and execute the command, adding -n $suffix
             cmd="$AUTO_SCRIPT $traffic -t $type $extra_flags -n $suffix"

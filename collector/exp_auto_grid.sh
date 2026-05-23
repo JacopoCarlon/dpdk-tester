@@ -193,6 +193,17 @@ pause_duration=1
 DPDK_STARTUP_DELAY=5
 start_l3fwd() {
     echo "---"
+    echo "killing any leftover instance on server A before starting a new one"
+    # Kill any leftover instance before starting a new one
+    sudo pkill -TERM -f "dpdk-l3fwd-power" 2>/dev/null || true
+    sleep 5   
+    sudo killall -9 dpdk-l3fwd-power 2>/dev/null || true
+    sleep 5 
+    sudo rm -rf /var/run/dpdk/* /dev/shm/dpdk* 2>/dev/null || true
+    sleep 3
+
+    echo "---"
+    echo "---"
     echo "---"
     echo "[$(date +%T)] Starting l3fwd-power on Server A"
     mode=$1
@@ -235,7 +246,7 @@ start_l3fwd() {
 stop_l3fwd() {
     echo "[$(date +%T)] Stopping l3fwd-power"
     sudo kill -TERM $L3FWD_PID 2>/dev/null
-    sleep 2
+    sleep 10
 }
 
 
