@@ -1,0 +1,116 @@
+
+
+
+Con Turbo : 
+
+./exp_auto_grid.sh -p tlogn -s 256 -b 256 -w -3.5 -x 0.1 -y -3.5 -z 0.1 -W -9.9 -X 0.1 -n turbo_tuned_tlogn
+
+./exp_auto_grid.sh -p web -s 256 -b 256 -A "10000 8.37 1.37 100 2000000 6.17 2.36 50 2000000 1.1 2.0 55.0 7.69 0.033" -n turbo_tuned_web
+./exp_auto_grid.sh -p web -s 256 -b 256 -A "100000 8.37 1.37 100 2000000 6.17 2.36 50 2000000 1.1 2.0 55.0 7.69 0.033" -n turbo_tuned_web
+./exp_auto_grid.sh -p web -s 256 -b 256 -A "1000000 8.37 1.37 100 2000000 6.17 2.36 50 2000000 1.1 2.0 55.0 7.69 0.033" -n turbo_tuned_web
+
+
+./exp_auto_grid.sh -p gaming -s 256 -b 256 -A "1000 dl 0.0 0.04 0 0.04 0.0 45.0 5.7 0.0 0.04 0.055 0.006 120.0 36.0 10000000000" -n turbo_tuned_gaming
+./exp_auto_grid.sh -p gaming -s 256 -b 256 -A "10000 dl 0.0 0.04 0 0.04 0.0 45.0 5.7 0.0 0.04 0.055 0.006 120.0 36.0 10000000000" -n turbo_tuned_gaming
+
+
+./exp_auto_grid.sh -p gaming -s 256 -b 256 -A "1000 ul 0.0 0.04 0 0.04 0.0 45.0 5.7 0.0 0.04 0.055 0.006 120.0 36.0 10000000000" -n turbo_tuned_gaming
+./exp_auto_grid.sh -p gaming -s 256 -b 256 -A "10000 ul 0.0 0.04 0 0.04 0.0 45.0 5.7 0.0 0.04 0.055 0.006 120.0 36.0 10000000000" -n turbo_tuned_gaming
+
+
+./exp_auto_grid.sh -p multipleExpLogn -s 256 -b 256 -A "350 0.006 14.45 0.35 100 5000000 25000000000" -n turbo_tuned_expLogn 
+./exp_auto_grid.sh -p multipleExpLogn -s 256 -b 256 -A "3500 0.006 14.45 0.35 100 5000000 25000000000" -n turbo_tuned_expLogn 
+
+
+
+
+
+
+
+
+
+
+noTurbo : 
+
+./exp_auto_grid.sh -p tlogn -s 256 -b 256 -w -3.5 -x 0.1 -y -3.5 -z 0.1 -W -9.9 -X 0.1 -n noTurbo_tuned_tlogn
+
+./exp_auto_grid.sh -p web -s 256 -b 256 -A "10000 8.37 1.37 100 2000000 6.17 2.36 50 2000000 1.1 2.0 55.0 7.69 0.033" -n noTurbo_tuned_web
+./exp_auto_grid.sh -p web -s 256 -b 256 -A "100000 8.37 1.37 100 2000000 6.17 2.36 50 2000000 1.1 2.0 55.0 7.69 0.033" -n noTurbo_tuned_web
+./exp_auto_grid.sh -p web -s 256 -b 256 -A "1000000 8.37 1.37 100 2000000 6.17 2.36 50 2000000 1.1 2.0 55.0 7.69 0.033" -n noTurbo_tuned_web
+
+./exp_auto_grid.sh -p gaming -s 256 -b 256 -A "1000 dl 0.0 0.04 0 0.04 0.0 45.0 5.7 0.0 0.04 0.055 0.006 120.0 36.0 10000000000" -n noTurbo_tuned_gaming
+./exp_auto_grid.sh -p gaming -s 256 -b 256 -A "10000 dl 0.0 0.04 0 0.04 0.0 45.0 5.7 0.0 0.04 0.055 0.006 120.0 36.0 10000000000" -n noTurbo_tuned_gaming
+
+
+./exp_auto_grid.sh -p gaming -s 256 -b 256 -A "1000 ul 0.0 0.04 0 0.04 0.0 45.0 5.7 0.0 0.04 0.055 0.006 120.0 36.0 10000000000" -n noTurbo_tuned_gaming
+./exp_auto_grid.sh -p gaming -s 256 -b 256 -A "10000 ul 0.0 0.04 0 0.04 0.0 45.0 5.7 0.0 0.04 0.055 0.006 120.0 36.0 10000000000" -n noTurbo_tuned_gaming
+
+
+
+
+./exp_auto_grid.sh -p multipleExpLogn -s 256 -b 256 -A "350 0.006 14.45 0.35 100 5000000 25000000000" -n noTurbo_tuned_expLogn 
+./exp_auto_grid.sh -p multipleExpLogn -s 256 -b 256 -A "3500 0.006 14.45 0.35 100 5000000 25000000000" -n noTurbo_tuned_expLogn 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+performance : 
+
+./exp_auto_grid.sh -p tlogn -s 256 -b 256 -w -3.5 -x 0.1 -y -3.5 -z 0.1 -W -9.9 -X 0.1 -n performance_tuned_tlogn
+
+./exp_auto_grid.sh -p web -s 256 -b 256 -A "10000 8.37 1.37 100 2000000 6.17 2.36 50 2000000 1.1 2.0 55.0 7.69 0.033" -n performance_tuned_web
+./exp_auto_grid.sh -p web -s 256 -b 256 -A "100000 8.37 1.37 100 2000000 6.17 2.36 50 2000000 1.1 2.0 55.0 7.69 0.033" -n performance_tuned_web
+./exp_auto_grid.sh -p web -s 256 -b 256 -A "1000000 8.37 1.37 100 2000000 6.17 2.36 50 2000000 1.1 2.0 55.0 7.69 0.033" -n performance_tuned_web
+
+./exp_auto_grid.sh -p gaming -s 256 -b 256 -A "1000 dl 0.0 0.04 0 0.04 0.0 45.0 5.7 0.0 0.04 0.055 0.006 120.0 36.0 10000000000" -n performance_tuned_gaming
+./exp_auto_grid.sh -p gaming -s 256 -b 256 -A "10000 dl 0.0 0.04 0 0.04 0.0 45.0 5.7 0.0 0.04 0.055 0.006 120.0 36.0 10000000000" -n performance_tuned_gaming
+
+
+./exp_auto_grid.sh -p gaming -s 256 -b 256 -A "1000 ul 0.0 0.04 0 0.04 0.0 45.0 5.7 0.0 0.04 0.055 0.006 120.0 36.0 10000000000" -n performance_tuned_gaming
+./exp_auto_grid.sh -p gaming -s 256 -b 256 -A "10000 ul 0.0 0.04 0 0.04 0.0 45.0 5.7 0.0 0.04 0.055 0.006 120.0 36.0 10000000000" -n performance_tuned_gaming
+
+
+./exp_auto_grid.sh -p multipleExpLogn -s 256 -b 256 -A "350 0.006 14.45 0.35 100 5000000 25000000000" -n performance_tuned_expLogn 
+./exp_auto_grid.sh -p multipleExpLogn -s 256 -b 256 -A "3500 0.006 14.45 0.35 100 5000000 25000000000" -n performance_tuned_expLogn 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
