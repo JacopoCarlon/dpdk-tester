@@ -252,7 +252,7 @@ static volatile bool force_quit = false;
 static struct rte_ether_addr src_mac_b0 = {{0x68, 0x05, 0xca, 0x34, 0x85, 0xa8}};   //lace enp4s0f1np0 i40e0
 static struct rte_ether_addr src_mac_b1 = {{0x68, 0x05, 0xca, 0x34, 0x85, 0xa9}};   //lace enp4s0f1np1 i40e1
 static struct rte_ether_addr dst_mac_a0 = {{0x68, 0x05, 0xca, 0x34, 0x87, 0x10}};   //whiskey enp4s0f1np0 i40e0
-static struct rte_ether_addr dst_mac_a0 = {{0x68, 0x05, 0xca, 0x34, 0x87, 0x11}};   //whiskey enp4s0f1np0 i40e1
+static struct rte_ether_addr dst_mac_a1 = {{0x68, 0x05, 0xca, 0x34, 0x87, 0x11}};   //whiskey enp4s0f1np0 i40e1
 
 
 /* IP configuration */
