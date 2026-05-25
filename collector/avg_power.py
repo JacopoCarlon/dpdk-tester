@@ -7,7 +7,7 @@ def main():
     parser.add_argument('-o', '--output', required=True, help='Output results file')
     args = parser.parse_args()
 
-    # RAPL energy counters (update if needed)
+    # RAPL energy counters 
     PKG_MAX_ENERGY = 262143328850
     DRAM_MAX_ENERGY = 65712999613
 

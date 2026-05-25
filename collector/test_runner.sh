@@ -55,7 +55,7 @@ TRAFFICS=(
 
 
 ############################################################
-# 2. Define the DPDK experiments (type + optional tuning flags), should be aligned with exp-auto_grid.sh input parsing !!!
+#  DPDK experiments (type + optional tuning flags) should be aligned with exp-auto_grid.sh input parsing !!!
 ##  ##  ##  usage() {
 ##  ##  ##      cat <<EOF
 ##  ##  ##  Usage: $0 [options]
