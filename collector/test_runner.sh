@@ -7,14 +7,8 @@ FREQ_SCRIPT="../j_usersp_optCstate_noTurbo.sh"
 SLEEP_BETWEEN=15               # seconds between individual runs
 WRAPPER_LOG="wrapper_$(date +%Y%m%d_%H%M%S).log"
 
-############################################################
-# 1. Define the traffic configurations you want to test
-#    Format: quoted string containing all flags EXCEPT
-#    -t (type) and the tunable DPDK parameters (-m, -M, -g, -B, -q).
-#    Include -p, -s, -b, -n, and any pattern‑specific flags.
-############################################################
-# sudo ./latency_test -l 2,4,6 -- -B 32 -s 256 -p tlogn -T -16.812 0.336 -9.904 0.336 -14.509 1.386
 
+# sudo ./latency_test -l 2,4,6 -- -B 32 -s 256 -p tlogn -T -16.812 0.336 -9.904 0.336 -14.509 1.386
 
 TRAFFICS_OLD=(
     # Example 1: TLOGN with name "turbo_tuned_tlogn"
@@ -85,6 +79,8 @@ TRAFFICS=(
 ##  ##  ##  }
 ############################################################
 EXPERIMENTS=(
+    # pure busy polling with no pauses ever
+    "pure"
     # Baseline - vary baseline_pause_duration (nanoseconds)
     "baseline -B 1"
     "baseline -B 30"
@@ -161,7 +157,6 @@ for target_freq in "${TARGET_FREQUENCIES[@]}"; do
     echo "Starting iterating on userspace governor with frequency $target_freq"
 
     for traffic in "${TRAFFICS[@]}"; do
-        # Extract the traffic's own name from the -n flag (e.g., "turbo_tuned_tlogn")
         traffic_name=""
         if [[ "$traffic" =~ -n[[:space:]]+([^[:space:]]+) ]]; then
             traffic_name="${BASH_REMATCH[1]}"
@@ -181,7 +176,7 @@ for target_freq in "${TARGET_FREQUENCIES[@]}"; do
         for exp in "${EXPERIMENTS[@]}"; do
             read -r type extra_flags <<< "$exp"
 
-            # Build a suffix that includes both traffic name and frequency
+            # suffix includes both traffic name and frequency
             suffix="${traffic_name}_freq${target_freq}"
 
             echo "----------------------------------------------------------------"
@@ -202,7 +197,7 @@ for target_freq in "${TARGET_FREQUENCIES[@]}"; do
 
             # Construct and execute the command, adding -n $suffix
             cmd="$AUTO_SCRIPT $traffic -t $type $extra_flags -n $suffix"
-            eval "$cmd"   # eval is safe here; variables are controlled
+            eval "$cmd"   
 
             echo "Finished. Sleeping $SLEEP_BETWEEN seconds..."
             sleep "$SLEEP_BETWEEN"
