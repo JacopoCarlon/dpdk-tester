@@ -1,6 +1,7 @@
 bad_scripts/
 
 res/
+res*/
 
 *.log
 *.out
