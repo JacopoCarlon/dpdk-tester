@@ -177,7 +177,7 @@ NAME=""                # Optional experiment name (appended to filename)
 
 
 # --- Type Configuration ---
-TYPES=("baseline" "interrupt-only" "pause" "hybrid" )
+TYPES=("baseline" "interrupt-only" "pause" "hybrid" "pure")
 
 # --- Tunable DPDK Parameters ---
 # These can be overridden via CLI flags (see getopts below)
@@ -211,6 +211,11 @@ start_l3fwd() {
     case $mode in
         baseline)
             sudo chrt -f 99  $L3FWD_PATH -l $DPDK_CORE_OPTION -- --pmd-mgmt=baseline --busypolling_pause_duration_ns=$baseline_pause_duration  -p 0x3 --config=$DPDK_QUEUE_CONFIG > "$RESULTS_DIR/l3fwd_baseline.log" 2>&1 &
+            L3FWD_PID=$!
+            sleep $DPDK_STARTUP_DELAY
+            ;;
+        pure)
+            sudo chrt -f 99  $L3FWD_PATH -l $DPDK_CORE_OPTION -- --pmd-mgmt=baseline -p 0x3 --config=$DPDK_QUEUE_CONFIG > "$RESULTS_DIR/l3fwd_pure.log" 2>&1 &
             L3FWD_PID=$!
             sleep $DPDK_STARTUP_DELAY
             ;;
@@ -410,6 +415,7 @@ run_latency_test() {
         pause_params_suffix="_PauseDuration${pause_duration}"
     fi
 
+    # No extra suffix needed for "pure" (it's just baseline without busypolling parameter)
 
     # Update filename template with pattern parameters
     local pattern_str=$(generate_pattern_string $pattern)
@@ -569,7 +575,7 @@ usage() {
 Usage: $0 [options]
 
 Pattern/size options:
-  -t TYPE       DPDK mode (baseline|interrupt-only|pause|hybrid)
+  -t TYPE       DPDK mode (baseline|interrupt-only|pause|hybrid|pure)
   -s SIZE       Packet size(s)
   -r RATE       Rate(s)
   -p PATTERN    Traffic pattern
