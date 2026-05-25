@@ -27,6 +27,7 @@ TRAFFICS=(
     # Uniform
     "-p uniform -s 256 -b 32 -r 2440000 -n uniform_baseline"
 
+
     # TLOGN
     # circa 5Gbps
     "-p tlogn -s 256 -b 32 -w -3.5 -x 0.1 -y -3.5 -z 0.1 -W -9.9 -X 0.1 -n tlogn5G"
@@ -34,12 +35,24 @@ TRAFFICS=(
     # 30Gbps
     # "-p tlogn -s 256 -b 256 -w -16.812 -x 0.336 -y -9.904 -z 0.336 -W -14.509 -X 0.386 -n tlogn33G"
 
-    # multipleExpLogn
-    '-p multipleExpLogn -s 256 -b 32 -A "350 0.006 14.45 0.35 100 5000000 25000000000" -n expLogn'
+
+
+    # multipleExpLogn; 
+    #   last parameter is target throughput!!! cannot usa the same on lace and cplex3 sadly
+    ### this works for cplex3: sudo ./latency_test -l 2,4,6 -- -B 32 -s 300 -p multipleExpLogn -- 300  2.0  14.45  0.35 100 5000000 9800000000
+    # '-p multipleExpLogn -s 256 -b 32 -A "350 0.006 14.45 0.35 100 5000000 25000000000" -n expLogn'    ## bad
+    '-p multipleExpLogn -s 256 -b 32 -A "350 2.0 14.45 0.35 100 5000000 9800000000" -n expLogn'
+
+
 
     # Web
-    '-p web -s 256 -b 32 -A "1000000 8.37 1.37 100 2000000 6.17 2.36 50 2000000 1.1 2.0 55.0 7.69 0.033" -n webTrf'
+    ### this works for cplex3 : sudo ./latency_test -l 2,4,6 -- -B 32 -s 300 -p web 800000 8.37 1.37 100 2000000 6.17 2.36 50 2000000 1.1 2.0 55.0 7.69 0.033 10000000000
+    # '-p web -s 256 -b 32 -A "1000000 8.37 1.37 100 2000000 6.17 2.36 50 2000000 1.1 2.0 55.0 7.69 0.033" -n webTrf'   ## bad
+    '-p web -s 256 -b 32 -A "800000 8.37 1.37 100 2000000 6.17 2.36 50 2000000 1.1 2.0 55.0 7.69 0.033 10000000000" -n webTrf'
 )
+
+
+
 
 ############################################################
 # 2. Define the DPDK experiments (type + optional tuning flags), should be aligned with exp-auto_grid.sh input parsing !!!
