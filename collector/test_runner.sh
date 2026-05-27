@@ -17,17 +17,16 @@ TRAFFICS=(
 
 
     # TLOGN
-    # circa 5Gbps
+    # --- RETIS --- circa 5Gbps
     "-p tlogn -s 256 -b 32 -w -3.5 -x 0.1 -y -3.5 -z 0.1 -W -9.9 -X 0.1 -n tlogn5G"
 
-    # 30Gbps
-    # "-p tlogn -s 256 -b 256 -w -16.812 -x 0.336 -y -9.904 -z 0.336 -W -14.509 -X 0.386 -n tlogn33G"
+    # --- UNIPI --- 30Gbps
+    ### "-p tlogn -s 256 -b 256 -w -16.812 -x 0.336 -y -9.904 -z 0.336 -W -14.509 -X 0.386 -n tlogn33G"
 
 
     # multipleExpLogn; 
     #   last parameter is target throughput!!! cannot usa the same on lace and cplex3 sadly
     ### this works for cplex3: sudo ./latency_test -l 2,4,6 -- -B 32 -s 300 -p multipleExpLogn -- 300  2.0  14.45  0.35 100 5000000 9800000000
-    # '-p multipleExpLogn -s 256 -b 32 -A "350 0.006 14.45 0.35 100 5000000 25000000000" -n expLogn'    ## bad
     '-p multipleExpLogn -s 256 -b 32 -A "350 2.0 14.45 0.35 100 5000000 9800000000" -n expLogn'
 
 
@@ -129,11 +128,6 @@ EXPERIMENTS=(
 ## | PMD pause (clb_pause)    | --pause-duration                | ns (modified from upstream)   | 200 ns               |
 ## | Baseline pause           | --busypolling_pause_duration_ns | ns                            | 50 ns                |
 
-EXPERIMENTS_SMOL=(
-    # Baseline - vary baseline_pause_duration
-    "baseline -B 30"
-    "baseline -B 50"
-)
 
 ############################################################
 # 3. Main loop
