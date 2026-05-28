@@ -20,7 +20,7 @@ SERVER_B_SCRIPT_DIR="/home/jcarlon/test/dpdk-tester/generator"
 L3FWD_PATH="${SCRIPT_DIR}/../../dpdk/build/examples/dpdk-l3fwd-power"
 RAPL_SCRIPT="${SCRIPT_DIR}/run_rapl.sh"
 RESULTS_DIR="${SCRIPT_DIR}/res" 
-MEASUREMENT_DURATION=30
+MEASUREMENT_DURATION=50
 MAX_BITRATE=10000000000  # 10 Gbps in bits/sec
 
 
@@ -64,7 +64,7 @@ check_local_paths() {
         echo "ERROR: RAPL_SCRIPT is not executable: $RAPL_SCRIPT"
         exit 1
     fi
-    echo "  ✓ run_rapl.sh script found and is executable"
+    echo "  run_rapl.sh script found and is executable"
 
     if [ ! -d "$RESULTS_DIR" ]; then
         echo "Creating results directory: $RESULTS_DIR"
@@ -73,7 +73,7 @@ check_local_paths() {
             exit 1
         }
     fi
-    echo "  ✓ results directory ready: $RESULTS_DIR"
+    echo "  results directory ready: $RESULTS_DIR"
     echo ""
 }
 

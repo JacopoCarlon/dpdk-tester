@@ -210,7 +210,12 @@ for target_freq in "${TARGET_FREQUENCIES[@]}"; do
 
             # Construct and execute the command, adding -n $suffix
             cmd="$AUTO_SCRIPT $traffic -t $type $extra_flags -n $suffix"
-            eval "$cmd"   
+            ## ## eval "$cmd"   
+            eval "$cmd" || {
+                ret=$?
+                echo "WARNING: Experiment failed with code $ret at $(date), continuing sweep…"
+                # other commands that are allowed to fail should use '|| true'
+            }
 
             echo "Finished. Sleeping $SLEEP_BETWEEN seconds..."
             sleep "$SLEEP_BETWEEN"
