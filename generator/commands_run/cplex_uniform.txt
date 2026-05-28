@@ -1,0 +1,1 @@
+ sudo ./latency_test -l 2,4,6  -- -p uniform -B 32 -s 256 -r 2440000 

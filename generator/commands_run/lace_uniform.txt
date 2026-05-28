@@ -1,0 +1,387 @@
+carlon@lace:~/test/dpdk-tester/generator$ sudo ./latency_test -l 2,4,6  -- -p uniform -B 32 -s 256 -r 10000000 
+argc : 12
+./latency_test
+-l
+2,4,6
+--
+-p
+uniform
+-B
+32
+-s
+256
+-r
+10000000
+printed the inputs !!!
+EAL: Detected CPU lcores: 16
+EAL: Detected NUMA nodes: 1
+EAL: Detected shared linkage of DPDK
+EAL: Multi-process socket /var/run/dpdk/rte/mp_socket
+EAL: Selected IOVA mode 'VA'
+EAL: VFIO support initialized
+EAL: Using IOMMU type 1 (Type 1)
+I40E_INIT: i40e_dcb_init_configure(): default dcb config fails. err = -53, aq_err = 3.
+I40E_INIT: i40e_dcb_init_configure(): default dcb config fails. err = -53, aq_err = 3.
+EAL completed !!! 
+
+Core 2 TSC: 10555133817922225
+TSC Check: tsc1=10555133817934630, tsc2=10555133818234805, elapsed=300175 (expected ~300000)
+Selected traffic pattern: UNIFORM
+---- using PACKET_SIZE : 256 
+-> trying to generate : PACKET_SIZE*8*target_rate : 20480000000 bits per second 
+
+=== Physical Limits Analysis ===
+For 256-byte packets:
+  Wire size: 280 bytes (including overhead)
+  Theoretical maximum rates:
+    10 Gbps: 4.4643 Mpps
+    40 Gbps: 17.8571 Mpps
+  Your requested wire rate is : 10.0000 Mpps
+  --- which would be 22.4000 Gbps (22400.0000 Mbps) 
+
+WARNING: Target rate exceeds 10 Gbps link capacity!
+Socket ID: 0
+Data room size: 2176
+Cache size: 0, priv_size: 0, nb_mbufs: 8192
+Called port_init on port 0
+Port 0 MAC: 68:05:ca:34:85:a8
+I40E_DRIVER: i40e_set_tx_function(): Using Vector AVX2 (port 0).
+I40E_DRIVER: i40e_set_rx_function(): Using Vector AVX2 (port 0).
+Port 0 promiscuous mode: ON
+Port 0 Configuration:
+- Promiscuous mode: RSS
+- Link Status: UP
+- Link Speed: 40000 Mbps
+Called port_init on port 1
+Port 1 MAC: 68:05:ca:34:85:a9
+I40E_DRIVER: i40e_set_tx_function(): Using Vector AVX2 (port 1).
+I40E_DRIVER: i40e_set_rx_function(): Using Vector AVX2 (port 1).
+Port 1 promiscuous mode: ON
+Port 1 Configuration:
+- Promiscuous mode: RSS
+- Link Status: UP
+- Link Speed: 40000 Mbps
+Port 0 configured MAC: 68:05:ca:34:85:a8
+Port 1 configured MAC: 68:05:ca:34:85:a9
+--- --- --- main launched sender on lcore 4 --- --- ---
+--- --- --- main launched receiver on lcore 6 --- --- ---
+Starting warmup period of 50000 micro-seconds...
+
+--- --- --- Starting send loop on lcore 4 --- --- ---
+
+
+--- --- --- Starting receive loop on lcore 6 --- --- ---
+
+
+Port 1 - Link status: UP
+Awoken from warmup, will now enable statistics.
+Warmup finished, initializing statistics collection.
+mainIterationCounter is now : 0
+mainIterationCounter is now : 1
+mainIterationCounter is now : 2
+mainIterationCounter is now : 3
+mainIterationCounter is now : 4
+mainIterationCounter is now : 5
+mainIterationCounter is now : 6
+mainIterationCounter is now : 7
+mainIterationCounter is now : 8
+mainIterationCounter is now : 9
+mainIterationCounter is now : 10
+mainIterationCounter is now : 11
+mainIterationCounter is now : 12
+^C
+Signal 2 received, waiting for threads to exit...
+
+I am lcore_recv, i got recv_empty_queues = 11190849
+
+
+I am lcore_send and i got send_empty_queues = 0
+
+Main loop exited since force_quit was set to true; is now waiting for worker threads...
+All worker threads have completed, will now print overall stats
+===============================
+
+---- Latency Histogram Buckets (0.5 µs resolution) ----
+Latency (µs) | Count
+----------------------
+     10.00   | 15
+     10.50   | 2372
+     11.00   | 5522
+     11.50   | 164828
+     12.00   | 3739159
+     12.50   | 19869346
+     13.00   | 16415064
+     13.50   | 27943835
+     14.00   | 12935712
+     14.50   | 17913211
+     15.00   | 16712589
+     15.50   | 10551443
+     16.00   | 4454932
+     16.50   | 645611
+     17.00   | 384959
+     17.50   | 274845
+     18.00   | 233092
+     18.50   | 196708
+     19.00   | 153129
+     19.50   | 134951
+     20.00   | 125506
+     20.50   | 109977
+     21.00   | 95860
+     21.50   | 106142
+     22.00   | 117365
+     22.50   | 109334
+     23.00   | 85302
+     23.50   | 60579
+     24.00   | 43925
+     24.50   | 36703
+     25.00   | 26538
+     25.50   | 19395
+     26.00   | 8980
+     26.50   | 4212
+     27.00   | 2240
+     27.50   | 1823
+     28.00   | 1365
+     28.50   | 1352
+     29.00   | 1053
+     29.50   | 788
+     30.00   | 684
+     30.50   | 401
+     31.00   | 514
+     31.50   | 723
+     32.00   | 533
+     32.50   | 505
+     33.00   | 457
+     33.50   | 419
+     34.00   | 471
+     34.50   | 481
+     35.00   | 513
+     35.50   | 423
+     36.00   | 399
+     36.50   | 464
+     37.00   | 375
+     37.50   | 365
+     38.00   | 402
+     38.50   | 467
+     39.00   | 555
+     39.50   | 408
+     40.00   | 325
+     40.50   | 383
+     41.00   | 434
+     41.50   | 472
+     42.00   | 527
+     42.50   | 401
+     43.00   | 411
+     43.50   | 388
+     44.00   | 454
+     44.50   | 417
+     45.00   | 452
+     45.50   | 525
+     46.00   | 371
+     46.50   | 297
+     47.00   | 437
+     47.50   | 361
+     48.00   | 439
+     48.50   | 408
+     49.00   | 350
+     49.50   | 413
+     50.00   | 315
+     50.50   | 389
+     51.00   | 507
+     51.50   | 349
+     52.00   | 457
+     52.50   | 372
+     53.00   | 346
+     53.50   | 382
+     54.00   | 421
+     54.50   | 346
+     55.00   | 533
+     55.50   | 374
+     56.00   | 353
+     56.50   | 290
+     57.00   | 422
+     57.50   | 462
+     58.00   | 480
+     58.50   | 393
+     59.00   | 392
+     59.50   | 316
+     60.00   | 384
+     60.50   | 429
+     61.00   | 465
+     61.50   | 362
+     62.00   | 392
+     62.50   | 318
+     63.00   | 388
+     63.50   | 421
+     64.00   | 383
+     64.50   | 396
+     65.00   | 453
+     65.50   | 410
+     66.00   | 268
+     66.50   | 362
+     67.00   | 467
+     67.50   | 367
+     68.00   | 498
+     68.50   | 394
+     69.00   | 279
+     69.50   | 399
+     70.00   | 407
+     70.50   | 463
+     71.00   | 459
+     71.50   | 341
+     72.00   | 302
+     72.50   | 337
+     73.00   | 376
+     73.50   | 447
+     74.00   | 488
+     74.50   | 412
+     75.00   | 424
+     75.50   | 280
+     76.00   | 321
+     76.50   | 480
+     77.00   | 429
+     77.50   | 413
+     78.00   | 392
+     78.50   | 308
+     79.00   | 446
+     79.50   | 366
+     80.00   | 372
+     80.50   | 448
+     81.00   | 456
+     81.50   | 358
+     82.00   | 356
+     82.50   | 340
+     83.00   | 479
+     83.50   | 436
+     84.00   | 363
+     84.50   | 398
+     85.00   | 271
+     85.50   | 400
+     86.00   | 387
+     86.50   | 473
+     87.00   | 403
+     87.50   | 353
+     88.00   | 214
+     88.50   | 243
+     89.00   | 268
+     89.50   | 236
+     90.00   | 215
+     90.50   | 160
+     91.00   | 126
+     91.50   | 74
+     92.00   | 57
+     92.50   | 23
+     93.00   | 41
+     93.50   | 27
+     94.00   | 36
+     95.00   | 18
+     96.50   | 14
+     97.50   | 14
+    136.50   | 18
+    137.00   | 18
+    137.50   | 18
+    138.00   | 18
+    139.00   | 50
+    140.00   | 32
+    140.50   | 32
+    141.00   | 32
+    141.50   | 32
+    142.00   | 32
+    142.50   | 32
+    143.00   | 14
+    143.50   | 32
+    144.00   | 18
+    144.50   | 46
+    145.00   | 18
+    145.50   | 67
+    146.00   | 82
+    146.50   | 100
+    147.00   | 118
+    147.50   | 118
+    148.00   | 114
+    148.50   | 82
+    149.00   | 111
+    149.50   | 132
+    150.00   | 165
+    150.50   | 144
+    151.00   | 203
+    151.50   | 192
+    152.00   | 145
+    152.50   | 148
+    153.00   | 249
+    153.50   | 198
+    154.00   | 269
+    154.50   | 298
+    155.00   | 250
+    155.50   | 157
+    156.00   | 266
+    156.50   | 326
+    157.00   | 349
+    157.50   | 294
+    158.00   | 284
+    158.50   | 220
+    159.00   | 255
+    159.50   | 333
+    160.00   | 380
+    160.50   | 427
+    161.00   | 341
+    161.50   | 380
+    162.00   | 242
+    162.50   | 280
+    163.00   | 366
+    163.50   | 349
+    164.00   | 329
+    164.50   | 271
+    165.00   | 223
+    165.50   | 216
+    166.00   | 251
+    166.50   | 250
+    167.00   | 211
+    167.50   | 263
+    168.00   | 169
+    168.50   | 176
+    169.00   | 259
+    169.50   | 188
+    170.00   | 178
+    170.50   | 151
+    171.00   | 129
+    171.50   | 83
+    172.00   | 105
+    172.50   | 183
+    173.00   | 97
+    173.50   | 76
+    174.00   | 80
+    174.50   | 42
+    175.00   | 42
+    175.50   | 20
+    176.00   | 34
+    176.50   | 28
+    177.00   | 13
+    177.50   | 4
+    178.00   | 6
+    178.50   | 2
+   2499.50   | 955
+
+---- Histogram-based Averages ----
+Average for packets ≤ 2500.00 µs: 14.0270 µs (based on 133753180 packets)
+Overall average (all packets): 14.2853 µs (based on 133753180 packets)
+===============================
+
+===============================
+       OVERALL STATISTICS       
+===============================
+Total TX packets: 133795424
+Total RX packets: 133753180
+Overall Loss: 0.0316%
+Average wire rate: 21.3686 Gbps (9.5395 Mpps)
+Theoretical max (for a 10Gbps): 4.4643 Mpps (for 256-byte packets with 280-byte wire size)
+Achieved: 213.7% of line rate (for a 10Gbps)
+Overall 95th percentile latency: 16.0000 us
+Overall 99th percentile latency: 18.5000 us
+Overall Min latency: 10.1850 us
+Overall Max latency: 3540.9067 us
+Overall Avg latency: 14.2853 us
+Overall StdDev latency: 9.6429 us
+===============================
+Test duration: 14.0209 seconds
+===============================
+carlon@lace:~/test/dpdk-tester/generator$ 

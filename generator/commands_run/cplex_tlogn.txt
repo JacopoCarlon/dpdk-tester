@@ -1,0 +1,1 @@
+sudo ./latency_test -l 0,2,4   -- -B 32 -s 256 -p tlogn -T -3.5 0.1 -3.5 0.1 -9.9 0.1
