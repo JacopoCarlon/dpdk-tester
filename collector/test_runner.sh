@@ -101,43 +101,43 @@ EXPERIMENTS=(
     # pure busy polling with no pauses ever
     "pure"
     ## # Baseline - vary baseline_pause_duration (nanoseconds)
-    ## "baseline -B 1"
-    ## "baseline -B 30"
-    ## "baseline -B 50"
-    ## "baseline -B 100"
-    ## "baseline -B 200"
-    ## "baseline -B 300"
-    ## "baseline -B 500"
-    ## "baseline -B 700"
-    ## "baseline -B 1000"
-    ## "baseline -B 2000"
-    ## # Pause - vary pause_duration (nanoseconds)
-    ## "pause -q 1"
-    ## "pause -q 2"
-    ## "pause -q 3"
-    ## "pause -q 10"
-    ## "pause -q 30"
-    ## "pause -q 50"
-    ## "pause -q 100"
-    ## "pause -q 200"
-    ## "pause -q 300"
-    ## "pause -q 500"
-    ## "pause -q 1000"
-    ## "pause -q 1500"
-    ## "pause -q 2000"   
-    ## # Interrupt-only (no extra flags)
-    ## "interrupt-only"
-    ## # Hybrid - vary minConsEmpty
-    ## "hybrid -m 1000 -M 10 -g 1000"
-    ## "hybrid -m 10000 -M 10 -g 1000"
-    ## # Hybrid - vary maxIntTimeout (microseconds)
-    ## "hybrid -m 10000 -M 50 -g 1000"
-    ## "hybrid -m 10000 -M 100 -g 1000"
-    ## "hybrid -m 10000 -M 1000 -g 1000"
-    ## # Hybrid - vary gracePollCount
-    ## "hybrid -m 10000 -M 10 -g 1000"
-    ## "hybrid -m 10000 -M 10 -g 2000"
-    ## "hybrid -m 10000 -M 10 -g 5000"
+    "baseline -B 1"
+    "baseline -B 30"
+    "baseline -B 50"
+    "baseline -B 100"
+    "baseline -B 200"
+    "baseline -B 300"
+    "baseline -B 500"
+    "baseline -B 700"
+    "baseline -B 1000"
+    "baseline -B 2000"
+    # Pause - vary pause_duration (nanoseconds)
+    "pause -q 1"
+    "pause -q 2"
+    "pause -q 3"
+    "pause -q 10"
+    "pause -q 30"
+    "pause -q 50"
+    "pause -q 100"
+    "pause -q 200"
+    "pause -q 300"
+    "pause -q 500"
+    "pause -q 1000"
+    "pause -q 1500"
+    "pause -q 2000"   
+    # Interrupt-only (no extra flags)
+    "interrupt-only"
+    # Hybrid - vary minConsEmpty
+    "hybrid -m 1000 -M 10 -g 1000"
+    "hybrid -m 10000 -M 10 -g 1000"
+    # Hybrid - vary maxIntTimeout (microseconds)
+    "hybrid -m 10000 -M 50 -g 1000"
+    "hybrid -m 10000 -M 100 -g 1000"
+    "hybrid -m 10000 -M 1000 -g 1000"
+    # Hybrid - vary gracePollCount
+    "hybrid -m 10000 -M 10 -g 1000"
+    "hybrid -m 10000 -M 10 -g 2000"
+    "hybrid -m 10000 -M 10 -g 5000"
 )
 
 ## | Mode                     | Parameter                       | Unit                          | Default              |
