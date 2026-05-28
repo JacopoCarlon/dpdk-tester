@@ -443,6 +443,47 @@ static void setup_payload(char *payload) {
 // ---------------------------------------------------------------------------
 
 
+
+
+
+/* Convert latency in TSC cycles to a histogram bin index */
+static inline uint32_t
+latency_tsc_to_bin(uint64_t latency_us, uint64_t tsc_hz)
+{
+    // double latency_us = (double)latency_cycles * 1e6 / (double)tsc_hz;
+
+    if (latency_us < 50.0) {
+        /* 0.1 µs bins: bin = floor(latency / 0.1) */
+        uint32_t bin = (uint32_t)(latency_us * 10.0);   /* *10 = /0.1 */
+        if (bin >= 500) bin = 499;                       /* safety cap */
+        return bin;
+    } else {
+        /* 0.5 µs bins starting at bin 500 */
+        uint32_t bin = 500 + (uint32_t)((latency_us - 50.0) * 2.0); /* *2 = /0.5 */
+        if (bin >= MAX_BINS) bin = MAX_BINS - 1;         /* overflow bucket */
+        return bin;
+    }
+}
+
+/* Return the lower edge of a histogram bin (in µs) */
+static double
+bin_lower_edge_us(uint32_t bin)
+{
+    if (bin < 500)
+        return (double)bin * 0.1;
+    else
+        return 50.0 + (double)(bin - 500) * 0.5;
+}
+
+
+
+
+
+
+
+
+
+
 // --- SEND --- 
 
 static double generate_lognormal(double mu, double sigma) {
@@ -2227,10 +2268,11 @@ static int lcore_recv(__rte_unused void *arg) {
             uint64_t latency = recv_ts - sent_ts;
             
             uint64_t latency_us = (latency * 1000000ULL) / tsc_hz;
-            //  //  uint32_t bin = (latency_us >= MAX_BINS) ? MAX_BINS - 1 : (uint32_t)latency_us;
             
-            uint64_t half_us = (latency * 2000000ULL) / tsc_hz;
-            uint32_t bin = (half_us >= MAX_BINS) ? MAX_BINS - 1 : (uint32_t)half_us;
+            // // uint64_t half_us = (latency * 2000000ULL) / tsc_hz;
+            // // uint32_t bin = (half_us >= MAX_BINS) ? MAX_BINS - 1 : (uint32_t)half_us;
+
+            uint32_t bin = latency_tsc_to_bin(latency_us, tsc_hz);
 
             if (max_latency_this_burst==0 && latency_us>= huge_latency_warning_us){
                 max_latency_this_burst = latency_us;
@@ -2363,7 +2405,7 @@ static void circa_print_histogram_buckets(void) {
 
 
 
-static void print_histogram_buckets(void) {
+static void mid_print_histogram_buckets(void) {
     printf("\n---- Latency Histogram Buckets (0.5 µs resolution) ----\n");
     printf("Latency (µs) | Count\n");
     printf("----------------------\n");
@@ -2416,13 +2458,66 @@ static void print_histogram_buckets(void) {
 
 
 
+
+
+
+
+
+
+
+
+static void
+print_histogram_buckets(void)
+{
+    printf("\n---- Latency Histogram Buckets (variable width) ----\n");
+    printf("  (0.1 µs bins up to 50 µs, then 0.5 µs bins)\n");
+    printf("Latency (µs)  | Count\n");
+    printf("-----------------------\n");
+
+    uint64_t total_in_bins = 0;
+    double weighted_sum = 0.0;
+
+    for (uint32_t bin = 0; bin <= stats.max_bin; bin++) {
+        uint64_t count = stats.histogram[bin];
+        if (count > 0) {
+            double lower = bin_lower_edge_us(bin);
+
+            if (bin == MAX_BINS - 1) {
+                /* Overflow bucket – print as "≥ lower" */
+                printf("  ≥ %7.2f     | %lu\n", lower, count);
+            } else {
+                printf("%7.2f -%7.2f | %lu\n",
+                       lower, lower + ((bin < 500) ? 0.1 : 0.5), count);
+            }
+
+            total_in_bins += count;
+            weighted_sum += lower * count;   /* use lower edge as representative */
+        }
+    }
+
+    if (total_in_bins > 0) {
+        double hist_avg = weighted_sum / total_in_bins;
+        printf("\nHistogram-based average: %.4f µs (based on %lu packets)\n",
+               hist_avg, total_in_bins);
+    } else {
+        printf("\nNo packets in histogram bins.\n");
+    }
+}
+
+
+
+
+
+
+
+
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 
 
 
-static double calculate_percentile(uint64_t histogram[], uint32_t max_bin, uint64_t total, double percentile) {
+static double mid_calculate_percentile(uint64_t histogram[], uint32_t max_bin, uint64_t total, double percentile) {
     if (total == 0) return 0.0;
 
     uint64_t desired = (uint64_t)ceil(percentile * total);
@@ -2438,6 +2533,31 @@ static double calculate_percentile(uint64_t histogram[], uint32_t max_bin, uint6
     
     return max_bin > 0 ? (double)max_bin : 0.0;
 }
+
+
+
+static double
+calculate_percentile(uint64_t histogram[], uint32_t max_bin,
+                     uint64_t total, double percentile)
+{
+    if (total == 0) return 0.0;
+
+    uint64_t desired = (uint64_t)ceil(percentile * total);
+    uint64_t accumulated = 0;
+
+    for (uint32_t bin = 0; bin <= max_bin; bin++) {
+        accumulated += histogram[bin];
+        if (accumulated >= desired) {
+            /* Return the **upper edge** of the bin to be conservative
+               (or you can return the lower edge).  Here we return the
+               bin's lower edge to match the histogram printout. */
+            return bin_lower_edge_us(bin);
+        }
+    }
+    /* Fallback: last known bin */
+    return bin_lower_edge_us(max_bin > 0 ? max_bin : 0);
+}
+
 
 
 
