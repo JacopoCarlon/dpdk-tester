@@ -87,7 +87,7 @@ If cache_size is non-zero, the rte_mempool library will try
 #define MAGIC_SIGNATURE 0x1234ABCD
 //  #define MAX_LATENCY_SAMPLES 1000000
 
-#define MAX_BINS 5000  // Each bin represents 1us up to 1ms
+#define MAX_BINS 1500  // Each bin represents 1us up to 1ms
 // Ethernet frame overhead calculations
 
 #define PHYSICAL_OVERHEAD 24  // 4(FCS) + 8(preamble) + 12(IFG)
