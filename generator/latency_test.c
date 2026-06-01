@@ -243,16 +243,18 @@ static struct rte_mempool *mbuf_pool;
 static volatile bool force_quit = false;
 
 /* MAC addresses Cplex3-Treebeard */
-//  static struct rte_ether_addr src_mac_b0 = {{0x68, 0x05, 0xca, 0x95, 0xfa, 0x64}};   //cplex3 enp4s0f1np0
-//  static struct rte_ether_addr src_mac_b1 = {{0x68, 0x05, 0xca, 0x95, 0xfa, 0x65}};   //cplex3 enp4s0f1np1
-//  static struct rte_ether_addr dst_mac_a0 = {{0x68, 0x05, 0xca, 0x95, 0xf8, 0xec}};   //treebeard enp4s0f1np0
+static struct rte_ether_addr src_mac_b0 = {{0x68, 0x05, 0xca, 0x95, 0xfa, 0x64}};   //cplex3 enp4s0f1np0
+static struct rte_ether_addr src_mac_b1 = {{0x68, 0x05, 0xca, 0x95, 0xfa, 0x65}};   //cplex3 enp4s0f1np1
+static struct rte_ether_addr dst_mac_a0 = {{0x68, 0x05, 0xca, 0x95, 0xf8, 0xec}};   //treebeard enp4s0f1np0
+static struct rte_ether_addr dst_mac_a1 = {{0x68, 0x05, 0xca, 0x95, 0xf8, 0xed}};   //treebeard enp4s0f1np0
+
 
 
 /* MAC addresses lace-whiskey*/
-static struct rte_ether_addr src_mac_b0 = {{0x68, 0x05, 0xca, 0x34, 0x85, 0xa8}};   //lace enp4s0f1np0 i40e0
-static struct rte_ether_addr src_mac_b1 = {{0x68, 0x05, 0xca, 0x34, 0x85, 0xa9}};   //lace enp4s0f1np1 i40e1
-static struct rte_ether_addr dst_mac_a0 = {{0x68, 0x05, 0xca, 0x34, 0x87, 0x10}};   //whiskey enp4s0f1np0 i40e0
-static struct rte_ether_addr dst_mac_a1 = {{0x68, 0x05, 0xca, 0x34, 0x87, 0x11}};   //whiskey enp4s0f1np0 i40e1
+// static struct rte_ether_addr src_mac_b0 = {{0x68, 0x05, 0xca, 0x34, 0x85, 0xa8}};   //lace enp4s0f1np0 i40e0
+// static struct rte_ether_addr src_mac_b1 = {{0x68, 0x05, 0xca, 0x34, 0x85, 0xa9}};   //lace enp4s0f1np1 i40e1
+// static struct rte_ether_addr dst_mac_a0 = {{0x68, 0x05, 0xca, 0x34, 0x87, 0x10}};   //whiskey enp4s0f1np0 i40e0
+// static struct rte_ether_addr dst_mac_a1 = {{0x68, 0x05, 0xca, 0x34, 0x87, 0x11}};   //whiskey enp4s0f1np0 i40e1
 
 
 /* IP configuration */
