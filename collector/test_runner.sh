@@ -30,12 +30,12 @@ TRAFFICS=(
     # --- RETIS --- circa 5Gbps
     ########## no : sudo ./latency_test -l 0,2,4   -- -B 32 -s 256 -p tlogn -T 0.061385 0.1 0.081732 0.1 0.011119 0.1
     ### cplex3: sudo ./latency_test -l 0,2,4   -- -B 32 -s 256 -p tlogn -T -3.5 0.1 -3.5 0.1 -9.9 0.1
-    "-p tlogn -s 256 -b 32 -w -3.5 -x 0.1 -y -3.5 -z 0.1 -W -9.9 -X 0.1 -n tlogn5G"
+    "-p tlogn -s 256 -b 32 -w -3.5 -x 0.1 -y -3.5 -z 0.1 -W -9.9 -X 0.1 -n tlogn"
 
     
     # --- UNIPI --- circa 13Gbps
     ### lace: sudo ./latency_test -l 0,2,4   -- -B 32 -s 256 -p tlogn -T -2.3  0.1  -4.5  0.1  -12.3  0.1
-    ###"-p tlogn -s 256 -b 256 -w -3.5 -x 0.1 -y -3.5 -z 0.1 -W -12.3 -X 0.1 -n tlognLace"
+    ###"-p tlogn -s 256 -b 256 -w -3.5 -x 0.1 -y -3.5 -z 0.1 -W -12.3 -X 0.1 -n tlogn"
 
 
     # --- --- --- --- --- --- --- --- --- --- --- --- 
