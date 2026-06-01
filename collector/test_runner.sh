@@ -16,44 +16,51 @@ TRAFFICS=(
     # --- --- --- --- --- --- --- --- --- --- --- --- 
     # --- --- --- --- Uniform --- --- --- --- 
     ### cplex3: sudo ./latency_test -l 2,4,6  -- -p uniform -B 32 -s 256 -r 2440000 
-    # "-p uniform -s 256 -b 32 -r 2440000 -n uniform"
+    "-p uniform -s 256 -b 32 -r 2440000 -n uniform"
 
     ### lace: sudo ./latency_test -l 2,4,6  -- -p uniform -B 32 -s 256 -r 10000000 
-    "-p uniform -s 256 -b 32 -r 10000000 -n uniform"
+    ### "-p uniform -s 256 -b 32 -r 10000000 -n uniform"
 
 
 
+    # --- --- --- --- --- --- --- --- --- --- --- --- 
+    # --- --- --- --- --- --- --- --- --- --- --- --- 
     # --- --- --- --- --- --- --- --- --- --- --- --- 
     # --- --- --- --- TLOGN --- --- --- --- 
     # --- RETIS --- circa 5Gbps
     ########## no : sudo ./latency_test -l 0,2,4   -- -B 32 -s 256 -p tlogn -T 0.061385 0.1 0.081732 0.1 0.011119 0.1
     ### cplex3: sudo ./latency_test -l 0,2,4   -- -B 32 -s 256 -p tlogn -T -3.5 0.1 -3.5 0.1 -9.9 0.1
-    #"-p tlogn -s 256 -b 32 -w -3.5 -x 0.1 -y -3.5 -z 0.1 -W -9.9 -X 0.1 -n tlogn5G"
+    "-p tlogn -s 256 -b 32 -w -3.5 -x 0.1 -y -3.5 -z 0.1 -W -9.9 -X 0.1 -n tlogn5G"
 
     
     # --- UNIPI --- circa 13Gbps
     ### lace: sudo ./latency_test -l 0,2,4   -- -B 32 -s 256 -p tlogn -T -2.3  0.1  -4.5  0.1  -12.3  0.1
-    "-p tlogn -s 256 -b 256 -w -3.5 -x 0.1 -y -3.5 -z 0.1 -W -12.3 -X 0.1 -n tlognLace"
+    ###"-p tlogn -s 256 -b 256 -w -3.5 -x 0.1 -y -3.5 -z 0.1 -W -12.3 -X 0.1 -n tlognLace"
 
 
-
+    # --- --- --- --- --- --- --- --- --- --- --- --- 
+    # --- --- --- --- --- --- --- --- --- --- --- --- 
     # --- --- --- --- --- --- --- --- --- --- --- --- 
     # --- --- --- --- multipleExpLogn --- --- --- --- 
     #   last parameter is target throughput!!! cannot usa the same on lace and cplex3 sadly
     ### cplex3: sudo ./latency_test -l 2,4,6 -- -B 32 -s 300 -p multipleExpLogn -- 300  2.0  14.45  0.35 100 5000000 9800000000
-    # '-p multipleExpLogn -s 256 -b 32 -A "350 2.0 14.45 0.35 100 5000000 9800000000" -n expLogn'
+    '-p multipleExpLogn -s 256 -b 32 -A "350 2.0 14.45 0.35 100 5000000 9800000000" -n expLogn'
     
     ### lace: sudo ./latency_test -l 2,4,6 -- -B 256 -s 1024 -p multipleExpLogn -- 500  4.0  14.45  0.35 100 5000000 20000000000
-    '-p multipleExpLogn -s 256 -b 32 -A "500 4.0 14.45 0.35 100 5000000 20000000000" -n expLogn'
+    ### '-p multipleExpLogn -s 256 -b 32 -A "500 4.0 14.45 0.35 100 5000000 20000000000" -n expLogn'
+
 
 
     # --- --- --- --- --- --- --- --- --- --- --- --- 
+    # --- --- --- --- --- --- --- --- --- --- --- --- 
+    # --- --- --- --- --- --- --- --- --- --- --- --- 
+    # --- --- --- --- --- --- --- --- --- --- --- --- 
     # --- --- --- --- Web --- --- --- --- 
     ### cplex3 : sudo ./latency_test -l 2,4,6 -- -B 32 -s 300 -p web 800000 8.37 1.37 100 2000000 6.17 2.36 50 2000000 1.1 2.0 55.0 7.69 0.033 10000000000
-    # '-p web -s 256 -b 32 -A "800000 8.37 1.37 100 2000000 6.17 2.36 50 2000000 1.1 2.0 55.0 7.69 0.033 10000000000" -n web'
+    '-p web -s 256 -b 32 -A "800000 8.37 1.37 100 2000000 6.17 2.36 50 2000000 1.1 2.0 55.0 7.69 0.033 10000000000" -n web'
 
     ### lace: sudo ./latency_test -l 2,4,6 -- -B 256 -s 1024 -p web 2500000 8.37 1.37 100 2000000 6.17 2.36 50 2000000 1.1 2.0 55.0 7.69 0.033 30000000000
-    '-p web -s 256 -b 32 -A "2500000 8.37 1.37 100 2000000 6.17 2.36 50 2000000 1.1 2.0 55.0 7.69 0.033 30000000000" -n web'
+    ### '-p web -s 256 -b 32 -A "2500000 8.37 1.37 100 2000000 6.17 2.36 50 2000000 1.1 2.0 55.0 7.69 0.033 30000000000" -n web'
 
 )
 
@@ -110,11 +117,11 @@ EXPERIMENTS=(
     "baseline -B 500"
     "baseline -B 700"
     "baseline -B 1000"
-    "baseline -B 2000"
+    #"baseline -B 2000"
     # Pause - vary pause_duration (nanoseconds)
     "pause -q 1"
-    "pause -q 2"
-    "pause -q 3"
+    #"pause -q 2"
+    #"pause -q 3"
     "pause -q 10"
     "pause -q 30"
     "pause -q 50"
@@ -125,6 +132,7 @@ EXPERIMENTS=(
     "pause -q 1000"
     "pause -q 1500"
     "pause -q 2000"   
+    "pause -q 2500"   
     # Interrupt-only (no extra flags)
     "interrupt-only"
     # Hybrid - vary minConsEmpty
