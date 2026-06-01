@@ -2209,7 +2209,7 @@ static int lcore_recv(__rte_unused void *arg) {
         printf("Failed to get link status for port %u: %s\n",
                rx_port, rte_strerror(-link_get_result));
     }
-    printf("Port %u - Link status: %s\n", rx_port, link.link_status ? "UP" : "DOWN");
+    printf("Port %u - Link status: %s\n\n", rx_port, link.link_status ? "UP" : "DOWN");
     
     uint64_t huge_latency_warning_ns = 800000; // 800us
 
@@ -2220,13 +2220,11 @@ static int lcore_recv(__rte_unused void *arg) {
         uint16_t nb_rx = rte_eth_rx_burst(rx_port, 0, rx_bufs, traffic_config.burst_size);
         if (nb_rx == 0) {
             recv_empty_queues += 1;
+            // TODO: should pause here, as in the forwarder busy pure ?
+            // rte_pause();
             continue;
         }
         uint64_t recv_ts = rte_rdtsc_precise();
-
-        uint64_t burst_min = UINT64_MAX;
-        uint64_t burst_max = 0;
-        uint32_t burst_max_bin = 0;
 
         if (stats_enabled) {
             stats.rx += nb_rx;
@@ -2279,30 +2277,21 @@ static int lcore_recv(__rte_unused void *arg) {
             
             uint64_t latency_ns = latency * _1G_over_tscHz;
             
-
             uint64_t bin = latency_ns_to_bin(latency_ns);
 
-            //  if (max_latency_this_burst==0 && latency_ns>= huge_latency_warning_us){
-            //      max_latency_this_burst = latency_ns;
-            //      max_latency_this_burst_sent_ts = sent_ts;
-            //      max_latency_this_burst_recv_ts = recv_ts;
-            //      max_latency_this_burst_payload = *(uint64_t*)(payload + SEQ_NUM_OFFSET);
-            //  }
+            #ifdef HIGH_LAT_VERBOSE
+            if (max_latency_this_burst==0 && latency_ns>= huge_latency_warning_ns){
+                max_latency_this_burst = latency_ns;
+                max_latency_this_burst_sent_ts = sent_ts;
+                max_latency_this_burst_recv_ts = recv_ts;
+                max_latency_this_burst_payload = *(uint64_t*)(payload + SEQ_NUM_OFFSET);
+            }
+            #endif
 
             if (stats_enabled) {
                 stats.histogram[bin]++; 
                 if (bin > stats.max_bin) {
                     stats.max_bin = bin;
-                }
-
-                if (latency < burst_min) {
-                    burst_min = latency;
-                }
-                if (latency > burst_max) {
-                    burst_max = latency;
-                }
-                if (bin > burst_max_bin) {
-                    burst_max_bin = bin;
                 }
             
                 // Update Welford's algorithm for overall standard deviation
@@ -2313,6 +2302,7 @@ static int lcore_recv(__rte_unused void *arg) {
                 sample_M2 += delta * delta2;
                 
                 // Update overall stats
+                // TODO: these might overflow ?
                 stats.latency_total += latency;
                 stats.squared_latency_sum += latency * latency;
                 
@@ -2324,6 +2314,8 @@ static int lcore_recv(__rte_unused void *arg) {
                 }
                 
                 
+                #ifdef DEBUG
+                rte_spinlock_lock(&stats.interval_lock);
                 // Update interval stats
                 stats.interval_latency_total += latency;
                 stats.interval_squared_latency_sum += latency * latency;
@@ -2333,22 +2325,10 @@ static int lcore_recv(__rte_unused void *arg) {
                 if (latency > stats.interval_max_latency)
                 stats.interval_max_latency = latency;
 
-                
-
-                // Update histogram
-                if (bin > burst_max_bin) {
-                    burst_max_bin = bin;
-                }
-
-                
-                #ifdef DEBUG
-                rte_spinlock_lock(&stats.interval_lock);
-                #endif
                 stats.interval_histogram[bin]++;
                 if (bin > stats.interval_max_bin) {
                     stats.interval_max_bin = bin;
                 }                
-                #ifdef DEBUG
                 rte_spinlock_unlock(&stats.interval_lock);
                 #endif
             }
@@ -2357,13 +2337,15 @@ static int lcore_recv(__rte_unused void *arg) {
         }
         
         // end of the for-iteration of this batch
-        //  int high_latency_verbose = 0;
-        //  if (high_latency_verbose &&  max_latency_this_burst > huge_latency_warning_us) {
-        //      printf("WARNING: High latency packet: seq=%lu, latency=%lu us, "
-        //          "sent_ts=%lu, recv_ts=%lu\n",
-        //              max_latency_this_burst_payload,
-        //              max_latency_this_burst, max_latency_this_burst_sent_ts, max_latency_this_burst_recv_ts);
-        //  }
+        #ifdef HIGH_LAT_VERBOSE
+        int high_latency_verbose = 0;
+        if (high_latency_verbose &&  max_latency_this_burst > huge_latency_warning_ns) {
+            printf("WARNING: High latency packet: seq=%lu, latency=%lu ns, "
+                "sent_ts=%lu, recv_ts=%lu\n",
+                    max_latency_this_burst_payload,
+                    max_latency_this_burst, max_latency_this_burst_sent_ts, max_latency_this_burst_recv_ts);
+        }
+        #endif
     }
 
     printf("\nI am lcore_recv, i got recv_empty_queues = %lu\n\n", recv_empty_queues);
@@ -2464,6 +2446,7 @@ calculate_percentile(uint64_t histogram[], uint32_t max_bin,
 
 
 static void print_interval_stats(void) {
+    #ifdef DEBUG
     uint64_t tsc_hz = rte_get_tsc_hz();
     uint64_t interval_packets = stats.interval_rx;
     
@@ -2540,6 +2523,7 @@ static void print_interval_stats(void) {
     
     // Reset interval stats
     reset_interval_stats();
+    #endif
 }
 
 
@@ -3141,9 +3125,9 @@ int main(int argc, char **argv) {
     }
     printf("printed the inputs !!!\n");
 
-#ifdef DEBUG
-    printf("Debug mode is ON\n");
-#endif
+    #ifdef DEBUG
+    printf("\n\n !!! - Debug mode is ON -\n\n");
+    #endif
 
     int ret = rte_eal_init(argc, argv);
     if (ret < 0) {
@@ -3232,9 +3216,9 @@ int main(int argc, char **argv) {
     }
 
 
-#ifdef DEBUG
+    #ifdef DEBUG
     rte_spinlock_init(&stats.interval_lock);
-#endif
+    #endif
 
     int socket_id = rte_socket_id();
     printf("Socket ID: %d\n", socket_id);
@@ -3260,11 +3244,15 @@ int main(int argc, char **argv) {
     // Initialize statistics
     stats.min_latency = UINT64_MAX;
     stats.max_latency = 0;
+
+    #ifdef DEBUG
     reset_interval_stats();
+    #endif
 
     for (uint16_t port = 0; port < NUM_PORTS; port++) {
-        if (port_init(port, mbuf_pool) != 0)
+        if (port_init(port, mbuf_pool) != 0){
             rte_exit(EXIT_FAILURE, "Port %u init failed\n", port);
+        }
     }
 
     for (uint16_t port = 0; port < NUM_PORTS; port++) {
@@ -3337,8 +3325,11 @@ int main(int argc, char **argv) {
     // Reset all statistics to start fresh after warmup
     memset(&stats, 0, sizeof(stats));
     stats.min_latency = UINT64_MAX;
+
+    #ifdef DEBUG
     stats.interval_min_latency = UINT64_MAX;
     reset_interval_stats();                 // sets interval_start_tsc to now
+    #endif
 
     stats_enabled = 1;
 
@@ -3350,7 +3341,7 @@ int main(int argc, char **argv) {
     while (!force_quit) {
         //sleep(1);
         int sleep_count = 0; 
-            while(!force_quit && sleep_count < sCount){
+        while(!force_quit && sleep_count < sCount){
             usleep(10000);
             sleep_count++;
         }
@@ -3360,7 +3351,7 @@ int main(int argc, char **argv) {
         if(sleep_count >= sCount){
             printf("mainIterationCounter is now : %d\n", mainIterationCounter);
             mainIterationCounter++;
-#ifdef DEBUG
+            #ifdef DEBUG
             print_interval_stats();
             printf("-n targetMaxToSend: %ld ; done %ld \n", total_packets, stats.tx);
             // Check if we've reached the target packet count
@@ -3368,7 +3359,7 @@ int main(int argc, char **argv) {
                 printf("Reached target packet count: %lu\n", total_packets);
                 force_quit = true;
             }
-#endif
+            #endif
         }
     }
 
@@ -3380,11 +3371,11 @@ int main(int argc, char **argv) {
     calculate_overall_stats();
     print_overall_stats();
 
-    usleep(500);
+    usleep(800);
     rte_eal_cleanup();
-    usleep(100);
-    fflush(stdout);
     usleep(300);
+    fflush(stdout);
+    usleep(500);
     return 0;
 }
 
