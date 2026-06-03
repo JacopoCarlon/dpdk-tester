@@ -89,8 +89,10 @@ If cache_size is non-zero, the rte_mempool library will try
 
 #define MAX_BINS 1500  // Each bin represents 1us up to 1ms
 #define LAST_HIGH_ACCURACY_LATENCY_NS 50000   // in ns
-#define HIGH_ACCURACY_BIN_SIZE_NS 100 
+#define HIGH_ACCURACY_BIN_SIZE_NS 100 // in ns
 #define NUM_HIGH_ACCURACY_BINS (LAST_HIGH_ACCURACY_LATENCY_NS/HIGH_ACCURACY_BIN_SIZE_NS)
+
+#define LOW_ACCURACY_BIN_SIZE_NS 1000 // in ns
 // Ethernet frame overhead calculations
 
 #define PHYSICAL_OVERHEAD 24  // 4(FCS) + 8(preamble) + 12(IFG)
@@ -465,7 +467,7 @@ static inline uint64_t latency_ns_to_bin(uint64_t latency_ns)
         } 
         return bin;
     } else {
-        uint32_t bin = NUM_HIGH_ACCURACY_BINS + (latency_ns - LAST_HIGH_ACCURACY_LATENCY_NS);
+        uint32_t bin = NUM_HIGH_ACCURACY_BINS + ((latency_ns - LAST_HIGH_ACCURACY_LATENCY_NS)/ LOW_ACCURACY_BIN_SIZE_NS);
         if (bin >= MAX_BINS){
             bin = MAX_BINS - 1;
         } 
@@ -1103,7 +1105,7 @@ static int lcore_send_web_traffic(__rte_unused void *arg) {
                         active_tail = (active_tail + 1) % num_users;
                     }
                 } else {
-                    // No embedded objects → directly schedule reading wait
+                    // No embedded objects -> directly schedule reading wait
                     u_rand = rand_double_per_user(&users[u].rng_state);
                     u_rand = RTE_MAX(u_rand, 0.000000001);
                     double reading_time = -log(1 - u_rand) / reading_lambda;
@@ -1913,7 +1915,7 @@ static int lcore_send(__rte_unused void *arg) {
                 }
 
                 if (onoff_state.in_on_phase) {
-                    // Detect OFF → ON transition
+                    // Detect OFF -> ON transition
                     if (!onoff_state.was_in_on_phase) {
                         // Reset rate limiter state to current time (no backlog)
                         rate_state.next_expected_tsc = now;
@@ -2022,7 +2024,7 @@ static int lcore_send(__rte_unused void *arg) {
                     tlogn_state.next_burst_tsc = now + 
                         (uint64_t)(interval * tlogn_state.tsc_hz);
                 } else {
-                    // Either in OFF phase or waiting for next burst → send nothing
+                    // Either in OFF phase or waiting for next burst -> send nothing
                     burst_to_send = 0;
                 }
                 custom_burst = true;
@@ -2380,8 +2382,8 @@ print_histogram_buckets(void)
             double lower = bin_lower_edge_us(bin);
 
             if (bin == MAX_BINS - 1) {
-                /* Overflow bucket – print as "≥ lower" */
-                printf("  ≥ %7.2f     | %lu\n", lower, count);
+                /* Overflow bucket - print as ">= lower" */
+                printf("  >= %7.2f     | %lu\n", lower, count);
             } else {
                 printf("%7.2f -%7.2f | %lu\n",
                        lower, lower + ((bin < 500) ? 0.1 : 0.5), count);
@@ -3386,8 +3388,8 @@ int main(int argc, char **argv) {
 // // 
 // // Mean ON duration  = 0.000050 s (     50.00 us)
 // // Mean OFF duration = 0.000050 s (     50.00 us)
-// // Mean inter‑burst  = 0.000001 s (      1.00 us)
+// // Mean inter-burst  = 0.000001 s (      1.00 us)
 // // Expected packet rate (ON phase) = 32'000'000.0 pps
-// // Long‑term average packet rate   = 16'000'000.0 pps
+// // Long-term average packet rate   = 16'000'000.0 pps
 
 
