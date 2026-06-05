@@ -2214,6 +2214,15 @@ static void reset_interval_stats(void) {
 }
 
 
+
+// this function cannot happen completely, 
+//  since resetting _tx would require that to have a mutex, which is against the fast approach i want.
+// // // // // static void reset_stats(void){
+// // // // //     return;
+// // // // // }
+
+
+
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
@@ -2671,13 +2680,13 @@ static void update_min_max_overall_stats(uint64_t histogram[]){
         if(histogram[ith_bin_pos] != 0){
             uint64_t this_lat_ns = ith_bin_pos * HIGH_ACCURACY_BIN_SIZE_NS;
             min_lat_ns = this_lat_ns;
-            break
+            break;
         }
     }
     if (min_lat_ns == UINT64_MAX){
         // i.e. no packets were received
-        overall->min_latency_ns = -1;
-        overall->max_latency_ns = -1;
+        overall.min_latency_ns = -1;
+        overall.max_latency_ns = -1;
         return;
     }
     // find the maximum
@@ -2688,8 +2697,8 @@ static void update_min_max_overall_stats(uint64_t histogram[]){
             max_lat_ns = this_lat_ns;
         }
     }
-    overall->min_latency_ns = min_lat_ns;
-    overall->max_latency_ns = max_lat_ns;
+    overall.min_latency_ns = min_lat_ns;
+    overall.max_latency_ns = max_lat_ns;
 }
 
 
@@ -3444,8 +3453,11 @@ int main(int argc, char **argv) {
     }
 
     // Initialize statistics
+    #ifdef ONLINE
     stats.min_latency = UINT64_MAX;
     stats.max_latency = 0;
+    #endif
+
 
     #ifdef DEBUG
     reset_interval_stats();
@@ -3526,8 +3538,11 @@ int main(int argc, char **argv) {
     
     // Reset all statistics to start fresh after warmup
     memset(&stats, 0, sizeof(stats));
+
+    #ifdef ONLINE
     stats.min_latency = UINT64_MAX;
     stats.max_latency = 0;
+    #ifdef ONLINE
 
     #ifdef DEBUG
     stats.interval_min_latency = UINT64_MAX;
