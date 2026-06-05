@@ -2452,6 +2452,7 @@ print_histogram_buckets(void)
 
     if (total_in_bins > 0) {
         double hist_avg = weighted_sum / total_in_bins;
+        hist_avg = hist_avg / 1000.0;
         printf("\nHistogram-based average: %.7f us (based on %lu packets)\n\n", hist_avg, total_in_bins);
     } else {
         printf("\nNo packets in histogram bins.\n");
