@@ -2622,7 +2622,7 @@ static void print_overall_stats(void) {
     if (overall.total_tx > 0) {
         int64_t loss = (int64_t)overall.total_tx - (int64_t)overall.total_rx;
         if (loss < 0) loss = 0;
-        printf("Overall Loss: %.4f%%\n", 
+        printf("Overall Loss: %.7f%%\n", 
                100.0 * loss / (double)overall.total_tx);
     } else {
         printf("Overall Loss: N/A\n");
@@ -2637,14 +2637,14 @@ static void print_overall_stats(void) {
         double avg_pps = (double)overall.total_rx / total_duration_sec;
         double avg_bps = avg_pps * wire_size * 8.0;
         
-        printf("Average wire rate: %.4f Gbps (%.4f Mpps)\n", 
+        printf("Average wire rate: %.7f Gbps (%.7f Mpps)\n", 
                avg_bps / 1e9, avg_pps / 1e6);
         
         // Theoretical maximum calculation
         double max_pps = 10.0e9 / (wire_size * 8.0);
-        printf("Theoretical max (for a 10Gbps): %.4f Mpps (for %lu-byte packets with %lu-byte wire size)\n",
+        printf("Theoretical max (for a 10Gbps): %.7f Mpps (for %lu-byte packets with %lu-byte wire size)\n",
                max_pps / 1e6, PACKET_SIZE, wire_size);
-        printf("Achieved: %.1f%% of line rate (for a 10Gbps)\n", (avg_pps / max_pps) * 100);
+        printf("Achieved: %.7%% of line rate (for a 10Gbps)\n", (avg_pps / max_pps) * 100);
     }
     
     if (overall.total_rx > 0) {
@@ -2663,7 +2663,7 @@ static void print_overall_stats(void) {
         printf("No packets received overall\n");
     }
     printf("===============================\n");
-    printf("Test duration: %.4f seconds\n", total_duration_sec);
+    printf("Test duration: %.7f seconds\n", total_duration_sec);
     printf("===============================\n");
 }
 
@@ -3124,12 +3124,12 @@ static void check_tsc_sync(void) {
     uint64_t elapsed = tsc2 - tsc1;
     double expected = 0.0001 * tsc_hz;  // 100us in cycles
     
-    printf("TSC Check: tsc1=%lu, tsc2=%lu, elapsed=%lu (expected ~%.0f)\n",
+    printf("TSC Check: tsc1=%lu, tsc2=%lu, elapsed=%lu (expected ~%.7f)\n",
         tsc1, tsc2, elapsed, expected);
     
     // Check TSC consistency across a difference time skip
     if (elapsed < expected * 0.9 || elapsed > expected * 1.1) {
-        printf("WARNING: TSC may not be stable! Drift: %.1f%%\n",
+        printf("WARNING: TSC may not be stable! Drift: %.7f%%\n",
             100.0 * (elapsed - expected) / expected);
     }
 }
@@ -3240,11 +3240,11 @@ int main(int argc, char **argv) {
     printf("For %lu-byte packets:\n", PACKET_SIZE);
     printf("  Wire size: %lu bytes (including overhead)\n", wire_size);
     printf("  Theoretical maximum rates:\n");
-    printf("    10 Gbps: %.4f Mpps\n", max_pps_10g / 1e6);
+    printf("    10 Gbps: %.7f Mpps\n", max_pps_10g / 1e6);
     //printf("    25 Gbps: .4f Mpps\n", max_pps_25g / 1e6);
-    printf("    40 Gbps: %.4f Mpps\n", max_pps_40g / 1e6);
-    printf("  Your requested wire rate is : %.4f Mpps\n", target_rate/1e6);
-    printf("  --- which would be %.4f Gbps (%.4f Mbps) \n", target_Mbps/1e3, target_Mbps);
+    printf("    40 Gbps: %.7f Mpps\n", max_pps_40g / 1e6);
+    printf("  Your requested wire rate is : %.7f Mpps\n", target_rate/1e6);
+    printf("  --- which would be %.7f Gbps (%.7f Mbps) \n", target_Mbps/1e3, target_Mbps);
 
 
     if (target_rate > 0 && target_rate > max_pps_10g) {
