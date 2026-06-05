@@ -2507,7 +2507,7 @@ static long double calculate_percentile_accurate(uint64_t histogram[], uint64_t 
         if (accumulated >= desired) {
             // With this bin we have reached the required to match that percentile; 
             //  return the lower edge of this bin.
-            uint64_t pkt_this_bin = histogram[i];
+            uint64_t pkt_this_bin = histogram[ith_bin_i];
             uint64_t before_this_bin = accumulated - pkt_this_bin;
             uint64_t missing = desired - before_this_bin;
             long double percentage = ((long double)missing) / ((long double)pkt_this_bin);
@@ -2844,8 +2844,8 @@ static void print_overall_stats(void) {
         printf("Overall 99th percentile latency: %.7f us\n", p99fus);
 
 
-        printf("Overall 95th percentile latency ACCURATE: %.13f us\n", overall.p95_ns_accurate);
-        printf("Overall 99th percentile latency ACCURATE: %.13f us\n", overall.p99_ns_accurate);
+        printf("Overall 95th percentile latency ACCURATE: %.13Lf us\n", overall.p95_ns_accurate);
+        printf("Overall 99th percentile latency ACCURATE: %.13Lf us\n", overall.p99_ns_accurate);
         
         #ifdef ONLINE
         printf(">>>Overall Min latency Online: %.7f us\n", (double)overall.onlineMin_tsc / tsc_per_us);
