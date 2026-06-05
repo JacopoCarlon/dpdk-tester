@@ -2737,8 +2737,12 @@ static void print_overall_stats(void) {
 
         double p95fus = overall.p95_ns / 1000.0;
         double p99fus = overall.p99_ns / 1000.0;
-        // // printf("Overall 95th percentile latency: %ld ns\n", overall.p95_ns);
-        // // printf("Overall 99th percentile latency: %ld ns\n", overall.p99_ns);
+        double avglep = overall.avg_latency_ex_post / 1000.0;
+        double avgstdep = overall.avg_latency_ex_post / 1000.0; 
+        
+        
+        printf("Overall 95th percentile latency: %ld ns\n", overall.p95_ns);
+        printf("Overall 99th percentile latency: %ld ns\n", overall.p99_ns);
 
         printf("Overall 95th percentile latency: %.7f us\n", p95fus);
         printf("Overall 99th percentile latency: %.7f us\n", p99fus);
@@ -2752,10 +2756,9 @@ static void print_overall_stats(void) {
         printf("Overall StdDev latency: %.7f us\n", 
                overall.stddev_latency / tsc_per_us);
 
-        printf("\nOverall Avg latency Ex Post: %10.7f us\n", 
-               overall.avg_latency_ex_post / tsc_per_us);
-        printf("Overall StdDev latency Ex Post: %10.7f us\n", 
-               overall.stddev_latency_ex_post / tsc_per_us);
+        printf("\nOverall Avg latency Ex Post: %10.7f us\n", avglep );
+        printf("Overall StdDev latency Ex Post: %10.7f us\n\n", avgstdep);
+
     } else {
         printf("No packets received overall\n");
     }
