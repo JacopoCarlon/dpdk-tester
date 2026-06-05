@@ -2399,7 +2399,7 @@ static void
 print_histogram_buckets(void)
 {
     printf("\n---- Latency Histogram Buckets (variable width) ----\n");
-    printf("  (%lu ns bins up to %lu ns == %lu us)\n", HIGH_ACCURACY_BIN_SIZE_NS, LAST_HIGH_ACCURACY_LATENCY_NS);
+    printf("  (%lu ns bins up to %lu ns == %lu us)\n", HIGH_ACCURACY_BIN_SIZE_NS, LAST_HIGH_ACCURACY_LATENCY_NS, LAST_HIGH_ACCURACY_LATENCY_US);
     printf("Latency (ns)  | Count\n");
     printf("-----------------------\n");
 
