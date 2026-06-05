@@ -2475,13 +2475,14 @@ static uint64_t calculate_percentile(uint64_t histogram[], uint64_t max_bin,
 }
 
 
-static long double calculate_avg_latency_ex_post(uint64_t* const histogram, uint64_t max_bin){
+static long double calculate_avg_latency_ex_post(uint64_t* histogram, uint64_t max_bin){
     uint64_t total_packets = 0;
     uint64_t total_ns_latency_cumulative = 0;
     uint64_t half_bin_latency_ns = HIGH_ACCURACY_BIN_SIZE_NS >> 1;
     for (uint64_t i = 0; i<max_bin; i++){
         total_packets += histogram[i];
         uint64_t ith_latency_ns = i*HIGH_ACCURACY_BIN_SIZE_NS + half_bin_latency_ns;
+        printf("bin i:%lu, latency of bin:%lu, count in this bin:%lu\n", i, ith_latency_ns, histogram[i]);
         total_ns_latency_cumulative += (histogram[i]*ith_latency_ns);
     }
     if (total_packets == 0){
@@ -2657,11 +2658,15 @@ static void calculate_overall_stats(void) {
         } else {
             overall.stddev_latency = 0;
         }
+        
         overall.avg_latency_ex_post = calculate_avg_latency_ex_post(stats.histogram, MAX_BINS);
+        printf("avg_latency_ex_post : %.15Lf\n", overall.avg_latency_ex_post);
         if (overall.avg_latency_ex_post < 0){
             printf("somehow avg latency from backets came back negative.. how ???\n");
         }
+        
         overall.stddev_latency_ex_post = calculate_stdev_ex_post(stats.histogram, MAX_BINS);
+        printf("stddev_latency_ex_post : %.15f\n", overall.stddev_latency_ex_post);
         if (overall.stddev_latency_ex_post < 0){
             printf("somehow avg latency from backets came back negative.. how ???\n");
         }
