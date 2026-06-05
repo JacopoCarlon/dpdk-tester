@@ -2650,10 +2650,15 @@ static void print_overall_stats(void) {
     if (overall.total_rx > 0) {
         double tsc_per_us = tsc_hz / 1e6;
 
+        double p95fus = overall.p95_ns / 1000.0;
+        double p99fus = overall.p99_ns / 1000.0;
+
         printf("Overall 95th percentile latency: %ld ns\n", overall.p95_ns);
         printf("Overall 99th percentile latency: %ld ns\n", overall.p99_ns);
-        printf("Overall 95th percentile latency: %.7f ns\n", overall.p95_ns);
-        printf("Overall 99th percentile latency: %.7f ns\n", overall.p99_ns);
+
+        printf("Overall 95th percentile latency: %.7f us\n", p95fus);
+        printf("Overall 99th percentile latency: %.7f us\n", p99fus);
+
         printf("Overall Min latency: %.7f us\n", 
                (double)overall.min_latency / tsc_per_us);
         printf("Overall Max latency: %.7f us\n", 
