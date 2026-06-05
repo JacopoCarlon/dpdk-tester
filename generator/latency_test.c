@@ -22,6 +22,8 @@
     #define M_PI 3.14159265358979323846
 #endif
 
+// #define DEBUG 1
+
 //#define BURST_SIZE 32
 /*
 Powers of 2 : 
@@ -309,13 +311,17 @@ static struct port_stats {
     uint64_t tx;
     uint64_t rx;
     uint64_t latency_total_tsc;     // this is the sum of the latency perceived by each of the RTT of packets. This is NOT the diff end_experiment - start_experiment, as that would be stupid.
+    uint64_t histogram[MAX_BINS];
+    
+    #ifdef ONLINE
     uint64_t min_latency;
     uint64_t max_latency;
     uint64_t squared_latency_sum;
-    // Interval stats
-    uint64_t histogram[MAX_BINS];
     uint64_t max_bin;            // Track highest bin with data
-#ifdef DEBUG
+    #endif
+    
+    #ifdef DEBUG
+    // Interval stats
     uint64_t interval_tx;
     uint64_t interval_rx;
     uint64_t interval_latency_total_tsc;
@@ -326,21 +332,25 @@ static struct port_stats {
     uint64_t interval_max_bin;
     uint64_t interval_start_tsc;
     rte_spinlock_t interval_lock; // Lock for interval stats
-#endif
+    #endif
 } stats;
 
 // Overall statistics
 struct overall_stats {
     uint64_t total_tx;
     uint64_t total_rx;
-    uint64_t min_latency;
-    uint64_t max_latency;
-    double avg_latency;
-    double stddev_latency;
-    double avg_latency_ex_post;
-    double stddev_latency_ex_post;
-    uint64_t p95_ns;
-    uint64_t p99_ns;
+    #ifdef ONLINE
+    uint64_t onlineMin_tsc;   // values updated online    
+    uint64_t onlineMax_tsc;   // values updated online    
+    double avg_latency;       // values updated online
+    double stddev_latency;    // values updated online   
+    #endif
+    uint64_t min_latency_ns;        // values calculated form bins after stop.   
+    uint64_t max_latency_ns;        // values calculated form bins after stop.   
+    double avg_latency_ex_post;     // values calculated form bins after stop.      
+    double stddev_latency_ex_post;  // values calculated form bins after stop.         
+    uint64_t p95_ns;    // the percentiles are always extracted from the bins.
+    uint64_t p99_ns;    // the percentiles are always extracted from the bins.
 } overall;
 
 
@@ -2323,11 +2333,9 @@ static int lcore_recv(__rte_unused void *arg) {
 
             if (stats_enabled) {
                 stats.histogram[bin]++; 
-                // this can be done when printing global stats for ease.
-                // // // if (bin > stats.max_bin) {
-                // // //     stats.max_bin = bin;
-                // // // }
-            
+                
+                #ifdef ONLINE
+                stats.latency_total_tsc += latency;
                 // Update Welford's algorithm for overall standard deviation
                 sample_count++;
                 double delta = latency - sample_mean;
@@ -2337,7 +2345,6 @@ static int lcore_recv(__rte_unused void *arg) {
                 
                 // Update overall stats
                 // TODO: these might overflow ?
-                stats.latency_total_tsc += latency;
                 stats.squared_latency_sum += latency * latency;
                 
                 if (latency < stats.min_latency){
@@ -2346,6 +2353,7 @@ static int lcore_recv(__rte_unused void *arg) {
                 if (latency > stats.max_latency){
                     stats.max_latency = latency;
                 }
+                #endif
                 
                 
                 #ifdef DEBUG
@@ -2524,6 +2532,7 @@ static double calculate_stdev_ex_post(uint64_t* const histogram, uint64_t max_bi
         sumSq += pkt_bin_i * (lat_bin_i * lat_bin_i);
     }
 
+    // this code had an overflow in the multiplication and cast.
     // long double opposedSumSq = ((long double)sum * (long double)sum) / (long double)n;
     
     long double ldSum = ((long double)sum);
@@ -2652,24 +2661,65 @@ static void print_interval_stats(void) {
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 
+static void update_min_max_overall_stats(uint64_t histogram[]){
+    uint64_t min_lat_ns = UINT64_MAX;
+    uint64_t max_lat_ns = 0;
+    uint64_t ith_bin_pos;
+
+    // set the minimum
+    for(ith_bin_pos = 0; ith_bin_pos < MAX_BINS; ith_bin_pos++){
+        if(histogram[ith_bin_pos] != 0){
+            uint64_t this_lat_ns = ith_bin_pos * HIGH_ACCURACY_BIN_SIZE_NS;
+            min_lat_ns = this_lat_ns;
+            break
+        }
+    }
+    if (min_lat_ns == UINT64_MAX){
+        // i.e. no packets were received
+        overall->min_latency_ns = -1;
+        overall->max_latency_ns = -1;
+        return;
+    }
+    // find the maximum
+    max_lat_ns = min_lat_ns;
+    for(; ith_bin_pos < MAX_BINS; ith_bin_pos++){
+        if(histogram[ith_bin_pos] != 0){
+            uint64_t this_lat_ns = ith_bin_pos * HIGH_ACCURACY_BIN_SIZE_NS;
+            max_lat_ns = this_lat_ns;
+        }
+    }
+    overall->min_latency_ns = min_lat_ns;
+    overall->max_latency_ns = max_lat_ns;
+}
+
+
 
 
 static void calculate_overall_stats(void) {
     overall.total_tx = stats.tx;
     overall.total_rx = stats.rx;
-    overall.min_latency = stats.min_latency;
-    overall.max_latency = stats.max_latency;
     
+    #ifdef ONLINE
+    overall.onlineMin_tsc = stats.min_latency;
+    overall.onlineMax_tsc = stats.max_latency;
+    #endif
+    update_min_max_overall_stats(stats.histogram);
+
+
+
     if (stats.rx > 0) {
+        #ifdef ONLINE
         overall.avg_latency = (double)stats.latency_total_tsc / stats.rx;
-        overall.p95_ns = calculate_percentile(stats.histogram, stats.max_bin, overall.total_rx, 0.95);
-        overall.p99_ns = calculate_percentile(stats.histogram, stats.max_bin, overall.total_rx, 0.99);
         // Use the results from Welford's algorithm
         if (sample_count > 1) {
             overall.stddev_latency = sqrt(sample_M2 / (sample_count - 1));
         } else {
             overall.stddev_latency = 0;
         }
+        #endif
+
+        overall.p95_ns = calculate_percentile(stats.histogram, stats.max_bin, overall.total_rx, 0.95);
+        overall.p99_ns = calculate_percentile(stats.histogram, stats.max_bin, overall.total_rx, 0.99);
         
         overall.avg_latency_ex_post = calculate_avg_latency_ex_post(stats.histogram, MAX_BINS);
         printf("avg_latency_ex_post : %10.15f\n", overall.avg_latency_ex_post);
@@ -2740,37 +2790,42 @@ static void print_overall_stats(void) {
     }
     
     if (overall.total_rx > 0) {
-        double tsc_per_us = tsc_hz / 1e6;
-
-        double p95fus = overall.p95_ns / 1000.0;
-        double p99fus = overall.p99_ns / 1000.0;
-        double avglep = overall.avg_latency_ex_post / 1000.0;
-        double avgstdep = overall.stddev_latency_ex_post / 1000.0; 
-        
+        double tsc_per_us = tsc_hz / 1e6;      
         
         // printf("Overall 95th percentile latency: %ld ns\n", overall.p95_ns);
         // printf("Overall 99th percentile latency: %ld ns\n", overall.p99_ns);
 
+        // 95th and 99th percentiles always are extracted form bins, so there is no online alternative
+
+        double p95fus = overall.p95_ns / 1000.0;
+        double p99fus = overall.p99_ns / 1000.0;
         printf("Overall 95th percentile latency: %.7f us\n", p95fus);
         printf("Overall 99th percentile latency: %.7f us\n", p99fus);
+        
+        #ifdef ONLINE
+        printf("Overall Min latency Online: %.7f us\n", (double)overall.onlineMin_tsc / tsc_per_us);
+        printf("Overall Max latency Online: %.7f us\n", (double)overall.onlineMax_tsc / tsc_per_us);
+        #endif       
+        double minLatfus = (double)overall.min_latency_ns / 1000.0;
+        double maxLatfus = (double)overall.max_latency_ns / 1000.0;
+        printf("Overall Min latency from bins: %.7f us\n", minLatfus);
+        printf("Overall Max latency from bins: %.7f us\n", minLatfus);
+        
 
-        printf("Overall Min latency: %.7f us\n", 
-               (double)overall.min_latency / tsc_per_us);
-        printf("Overall Max latency: %.7f us\n", 
-               (double)overall.max_latency / tsc_per_us);
-        printf("Overall Avg latency: %.7f us\n", 
-               overall.avg_latency / tsc_per_us);
-        printf("Overall StdDev latency: %.7f us\n", 
-               overall.stddev_latency / tsc_per_us);
-
-        printf("\nOverall Avg latency Ex Post: %.7f us\n", avglep );
-        printf("Overall StdDev latency Ex Post: %.7f us\n\n", avgstdep);
+        #ifdef ONLINE
+        printf("Overall Avg latency: %.7f us\n", overall.avg_latency / tsc_per_us);
+        printf("Overall StdDev latency: %.7f us\n", overall.stddev_latency / tsc_per_us);
+        #endif
+        double avglep = overall.avg_latency_ex_post / 1000.0;
+        double avgstdep = overall.stddev_latency_ex_post / 1000.0; 
+        printf("\nOverall Avg latency from bins: %.7f us\n", avglep );
+        printf("Overall StdDev latency from bins: %.7f us\n\n", avgstdep);
 
     } else {
-        printf("No packets received overall\n");
+        printf("\n\nNo packets received overall\n\n");
     }
     printf("===============================\n");
-    printf("Test duration: %.7f seconds\n", total_duration_sec);
+    printf("Test duration: %.11f seconds\n", total_duration_sec);
     printf("===============================\n");
 }
 
