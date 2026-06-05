@@ -2524,11 +2524,18 @@ static double calculate_stdev_ex_post(uint64_t* const histogram, uint64_t max_bi
         sumSq += pkt_bin_i * (lat_bin_i * lat_bin_i);
     }
 
-    long double opposedSumSq = ((long double)(sum * sum)) / ((long double)n);
+    // long double opposedSumSq = ((long double)sum * (long double)sum) / (long double)n;
+    
+    long double ldSum = ((long double)sum);
+    long double ldn = ((long double)n);
+    long double sumOverN = ldSum / ldn;
+    long double opposedSumSq = ldSum * sumOverN;
 
-    long double diff = sumSq - opposedSumSq;
+    long double ldSumSq = ((long double)sumSq);
 
-    long double varianceLD = diff / ((long double)(n-1));
+    long double diff = ldSumSq - opposedSumSq;
+
+    long double varianceLD = diff / (ldn-1);
 
     printf("<long double_type> varianceLD : %.8Lf .\n", varianceLD);
 
@@ -2738,11 +2745,11 @@ static void print_overall_stats(void) {
         double p95fus = overall.p95_ns / 1000.0;
         double p99fus = overall.p99_ns / 1000.0;
         double avglep = overall.avg_latency_ex_post / 1000.0;
-        double avgstdep = overall.avg_latency_ex_post / 1000.0; 
+        double avgstdep = overall.stddev_latency_ex_post / 1000.0; 
         
         
-        printf("Overall 95th percentile latency: %ld ns\n", overall.p95_ns);
-        printf("Overall 99th percentile latency: %ld ns\n", overall.p99_ns);
+        // printf("Overall 95th percentile latency: %ld ns\n", overall.p95_ns);
+        // printf("Overall 99th percentile latency: %ld ns\n", overall.p99_ns);
 
         printf("Overall 95th percentile latency: %.7f us\n", p95fus);
         printf("Overall 99th percentile latency: %.7f us\n", p99fus);
@@ -2756,8 +2763,8 @@ static void print_overall_stats(void) {
         printf("Overall StdDev latency: %.7f us\n", 
                overall.stddev_latency / tsc_per_us);
 
-        printf("\nOverall Avg latency Ex Post: %10.7f us\n", avglep );
-        printf("Overall StdDev latency Ex Post: %10.7f us\n\n", avgstdep);
+        printf("\nOverall Avg latency Ex Post: %.7f us\n", avglep );
+        printf("Overall StdDev latency Ex Post: %.7f us\n\n", avgstdep);
 
     } else {
         printf("No packets received overall\n");
