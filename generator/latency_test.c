@@ -2644,7 +2644,7 @@ static void print_overall_stats(void) {
         double max_pps = 10.0e9 / (wire_size * 8.0);
         printf("Theoretical max (for a 10Gbps): %.7f Mpps (for %lu-byte packets with %lu-byte wire size)\n",
                max_pps / 1e6, PACKET_SIZE, wire_size);
-        printf("Achieved: %.7%% of line rate (for a 10Gbps)\n", (avg_pps / max_pps) * 100);
+        printf("Achieved: %.7f of line rate (for a 10Gbps)\n", (avg_pps / max_pps) * 100);
     }
     
     if (overall.total_rx > 0) {
