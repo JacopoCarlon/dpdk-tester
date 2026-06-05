@@ -2171,6 +2171,7 @@ static int lcore_send(__rte_unused void *arg) {
             else if (now < expected_next) {
                 uint64_t wait_until = expected_next;
                 while (rte_rdtsc_precise() < wait_until && !force_quit) {
+                    send_empty_queues += 1;
                     rte_pause();
                 }
                 if (force_quit) break;
