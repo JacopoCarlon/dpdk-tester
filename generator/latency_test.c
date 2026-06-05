@@ -355,8 +355,11 @@ struct overall_stats {
     uint64_t p99_99_ns;    // the percentiles are always extracted from the bins.
     long double p95_ns_accurate;
     long double p99_ns_accurate;
-    long double p99_9_ns_accurate;
-    long double p99_99_ns_accurate;
+    long double p99_9000_ns_accurate;
+    long double p99_9900_ns_accurate;
+    long double p99_9990_ns_accurate;
+    long double p99_9999_ns_accurate;
+
 } overall;
 
 
@@ -2771,9 +2774,11 @@ static void calculate_overall_stats(void) {
         
         overall.p95_ns_accurate = calculate_percentile_accurate(stats.histogram, MAX_BINS, overall.total_rx, 0.95);
         overall.p99_ns_accurate = calculate_percentile_accurate(stats.histogram, MAX_BINS, overall.total_rx, 0.99);
-        overall.p99_9_ns_accurate = calculate_percentile_accurate(stats.histogram, MAX_BINS, overall.total_rx, 0.999);
-        overall.p99_99_ns_accurate = calculate_percentile_accurate(stats.histogram, MAX_BINS, overall.total_rx, 0.9999);
-        
+        overall.p99_9000_ns_accurate = calculate_percentile_accurate(stats.histogram, MAX_BINS, overall.total_rx, 0.999);
+        overall.p99_9900_ns_accurate = calculate_percentile_accurate(stats.histogram, MAX_BINS, overall.total_rx, 0.9999);
+        overall.p99_9990_ns_accurate = calculate_percentile_accurate(stats.histogram, MAX_BINS, overall.total_rx, 0.99999);
+        overall.p99_9999_ns_accurate = calculate_percentile_accurate(stats.histogram, MAX_BINS, overall.total_rx, 0.999999);
+
         overall.avg_latency_ex_post = calculate_avg_latency_ex_post(stats.histogram, MAX_BINS);
         printf("avg_latency_ex_post : %10.15f\n", overall.avg_latency_ex_post);
         if (overall.avg_latency_ex_post < 0){
@@ -2855,16 +2860,15 @@ static void print_overall_stats(void) {
 
 
 
-        long double p95fusAccurate = overall.p95_ns_accurate / 1000.0;
-        long double p99fusAccurate = overall.p99_ns_accurate / 1000.0;
-        printf("Overall 95.0000th percentile latency ACCURATE: %20.13Lf us\n", p95fusAccurate);
-        printf("Overall 99.0000th percentile latency ACCURATE: %20.13Lf us\n", p99fusAccurate);
-
-        long double p99_9_fusAccurate = overall.p99_9_ns_accurate / 1000.0;
-        long double p99_99_fusAccurate = overall.p99_99_ns_accurate / 1000.0;
-        printf("Overall 99.9000th percentile latency ACCURATE: %20.13Lf us\n", p99_9_fusAccurate);
-        printf("Overall 99.9900th percentile latency ACCURATE: %20.13Lf us\n", p99_99_fusAccurate);
-        
+        long double p95_0000_fusAccurate = overall.p95_ns_accurate / 1000.0;
+        long double p99_0000_fusAccurate = overall.p99_ns_accurate / 1000.0;
+        printf("Overall 95.0000th percentile latency ACCURATE: %20.13Lf us\n", pp95_0000_fusAccurate);
+        printf("Overall 99.0000th percentile latency ACCURATE: %20.13Lf us\n", pp99_0000_fusAccurate);
+       
+        printf("Overall 99.9000th percentile latency ACCURATE: %20.13Lf us\n", (overall.p99_9000_ns_accurate / (long double)1000.0) );
+        printf("Overall 99.9900th percentile latency ACCURATE: %20.13Lf us\n", (overall.p99_9900_ns_accurate / (long double)1000.0) );
+        printf("Overall 99.9990th percentile latency ACCURATE: %20.13Lf us\n", (overall.p99_9990_ns_accurate / (long double)1000.0) );
+        printf("Overall 99.9999th percentile latency ACCURATE: %20.13Lf us\n", (overall.p99_9999_ns_accurate / (long double)1000.0) );
         
         #ifdef ONLINE
         printf(">>>Overall Min latency Online: %16.7f us\n", (double)overall.onlineMin_tsc / tsc_per_us);
