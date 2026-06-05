@@ -2442,7 +2442,7 @@ print_histogram_buckets(void)
                 /* Overflow bucket - print as ">= lower" */
                 printf("  >= %.7f   | %lu\n", flow_us, count);
             } else {
-                printf("%-13.7f - %-13.7f | %lu\n", flow_us, fhig_us, count);
+                printf("%13.7f - %13.7f | %lu\n", flow_us, fhig_us, count);
             }
 
             total_in_bins += count;
@@ -2840,8 +2840,8 @@ static void print_overall_stats(void) {
 
         double p95fus = overall.p95_ns / 1000.0;
         double p99fus = overall.p99_ns / 1000.0;
-        printf("Overall 95th percentile latency: %-13.7f us\n", p95fus);
-        printf("Overall 99th percentile latency: %-13.7f us\n", p99fus);
+        printf("Overall 95th percentile latency: %13.7f us\n", p95fus);
+        printf("Overall 99th percentile latency: %13.7f us\n", p99fus);
 
 
 
@@ -2851,23 +2851,23 @@ static void print_overall_stats(void) {
         printf("Overall 99th percentile latency ACCURATE: %17.13Lf us\n", p99fusAccurate);
         
         #ifdef ONLINE
-        printf(">>>Overall Min latency Online: %-13.7f us\n", (double)overall.onlineMin_tsc / tsc_per_us);
-        printf(">>>Overall Max latency Online: %-13.7f us\n", (double)overall.onlineMax_tsc / tsc_per_us);
+        printf(">>>Overall Min latency Online: %13.7f us\n", (double)overall.onlineMin_tsc / tsc_per_us);
+        printf(">>>Overall Max latency Online: %13.7f us\n", (double)overall.onlineMax_tsc / tsc_per_us);
         #endif       
         double minLatfus = (double)overall.min_latency_ns / 1000.0;
         double maxLatfus = (double)overall.max_latency_ns / 1000.0;
-        printf("Overall Min latency from bins: %-13.7f us\n", minLatfus);
-        printf("Overall Max latency from bins: %-13.7f us\n", maxLatfus);
+        printf("Overall Min latency from bins: %13.7f us\n", minLatfus);
+        printf("Overall Max latency from bins: %13.7f us\n", maxLatfus);
         
 
         #ifdef ONLINE
-        printf(">>>Overall Avg latency: %-13.7f us\n", overall.avg_latency / tsc_per_us);
-        printf(">>>Overall StdDev latency: %-13.7f us\n", overall.stddev_latency / tsc_per_us);
+        printf(">>>Overall Avg latency: %13.7f us\n", overall.avg_latency / tsc_per_us);
+        printf(">>>Overall StdDev latency: %13.7f us\n", overall.stddev_latency / tsc_per_us);
         #endif
         double avglep = overall.avg_latency_ex_post / 1000.0;
         double avgstdep = overall.stddev_latency_ex_post / 1000.0; 
-        printf("Overall Avg latency from bins: %-13.7f us\n", avglep );
-        printf("Overall StdDev latency from bins: %-13.7f us\n", avgstdep);
+        printf("Overall Avg latency from bins: %13.7f us\n", avglep );
+        printf("Overall StdDev latency from bins: %13.7f us\n", avgstdep);
 
     } else {
         printf("\n\nNo packets received overall\n\n");
