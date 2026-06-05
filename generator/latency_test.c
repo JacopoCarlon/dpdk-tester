@@ -337,7 +337,7 @@ struct overall_stats {
     uint64_t max_latency;
     double avg_latency;
     double stddev_latency;
-    long double avg_latency_ex_post;
+    double avg_latency_ex_post;
     double stddev_latency_ex_post;
     uint64_t p95_ns;
     uint64_t p99_ns;
@@ -2475,7 +2475,7 @@ static uint64_t calculate_percentile(uint64_t histogram[], uint64_t max_bin,
 }
 
 
-static long double calculate_avg_latency_ex_post(uint64_t* histogram, uint64_t max_bin){
+static double calculate_avg_latency_ex_post(uint64_t* histogram, uint64_t max_bin){
     uint64_t total_packets = 0;
     uint64_t total_ns_latency_cumulative = 0;
     uint64_t half_bin_latency_ns = HIGH_ACCURACY_BIN_SIZE_NS >> 1;
@@ -2489,7 +2489,7 @@ static long double calculate_avg_latency_ex_post(uint64_t* histogram, uint64_t m
         return -1.0;
     }
 
-    long double avgep = (long double)total_ns_latency_cumulative / (long double)total_packets;
+    double avgep = (double)total_ns_latency_cumulative / (double)total_packets;
     return avgep;
 }
 
@@ -2660,13 +2660,13 @@ static void calculate_overall_stats(void) {
         }
         
         overall.avg_latency_ex_post = calculate_avg_latency_ex_post(stats.histogram, MAX_BINS);
-        printf("avg_latency_ex_post : %.15Lf\n", overall.avg_latency_ex_post);
+        printf("avg_latency_ex_post : %10.15f\n", overall.avg_latency_ex_post);
         if (overall.avg_latency_ex_post < 0){
             printf("somehow avg latency from backets came back negative.. how ???\n");
         }
         
         overall.stddev_latency_ex_post = calculate_stdev_ex_post(stats.histogram, MAX_BINS);
-        printf("stddev_latency_ex_post : %.15f\n", overall.stddev_latency_ex_post);
+        printf("stddev_latency_ex_post : %10.15f\n", overall.stddev_latency_ex_post);
         if (overall.stddev_latency_ex_post < 0){
             printf("somehow avg latency from backets came back negative.. how ???\n");
         }
@@ -2747,9 +2747,9 @@ static void print_overall_stats(void) {
         printf("Overall StdDev latency: %.7f us\n", 
                overall.stddev_latency / tsc_per_us);
 
-        printf("\nOverall Avg latency Ex Post: %.7f us\n", 
+        printf("\nOverall Avg latency Ex Post: %10.7f us\n", 
                overall.avg_latency_ex_post / tsc_per_us);
-        printf("Overall StdDev latency Ex Post: %.7f us\n", 
+        printf("Overall StdDev latency Ex Post: %10.7f us\n", 
                overall.stddev_latency_ex_post / tsc_per_us);
     } else {
         printf("No packets received overall\n");
