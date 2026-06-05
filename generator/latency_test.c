@@ -2727,8 +2727,8 @@ static void calculate_overall_stats(void) {
         }
         #endif
 
-        overall.p95_ns = calculate_percentile(stats.histogram, stats.max_bin, overall.total_rx, 0.95);
-        overall.p99_ns = calculate_percentile(stats.histogram, stats.max_bin, overall.total_rx, 0.99);
+        overall.p95_ns = calculate_percentile(stats.histogram, MAX_BINS, overall.total_rx, 0.95);
+        overall.p99_ns = calculate_percentile(stats.histogram, MAX_BINS, overall.total_rx, 0.99);
         
         overall.avg_latency_ex_post = calculate_avg_latency_ex_post(stats.histogram, MAX_BINS);
         printf("avg_latency_ex_post : %10.15f\n", overall.avg_latency_ex_post);
@@ -3542,7 +3542,7 @@ int main(int argc, char **argv) {
     #ifdef ONLINE
     stats.min_latency = UINT64_MAX;
     stats.max_latency = 0;
-    #ifdef ONLINE
+    #endif
 
     #ifdef DEBUG
     stats.interval_min_latency = UINT64_MAX;
