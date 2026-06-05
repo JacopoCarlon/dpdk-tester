@@ -87,12 +87,26 @@ If cache_size is non-zero, the rte_mempool library will try
 #define MAGIC_SIGNATURE 0x1234ABCD
 //  #define MAX_LATENCY_SAMPLES 1000000
 
-#define MAX_BINS 1500  // Each bin represents 1us up to 1ms
-#define LAST_HIGH_ACCURACY_LATENCY_NS 50000   // in ns
-#define HIGH_ACCURACY_BIN_SIZE_NS 100 // in ns
-#define NUM_HIGH_ACCURACY_BINS (LAST_HIGH_ACCURACY_LATENCY_NS/HIGH_ACCURACY_BIN_SIZE_NS)
 
-#define LOW_ACCURACY_BIN_SIZE_NS 1000 // in ns
+#define _1K 1000UL
+#define _1M 1000000UL
+#define _1G 1000000000UL
+
+#define _MS_IN_A_SECOND _1K
+#define _US_IN_A_SECOND _1M
+#define _NS_IN_A_SECOND _1G
+
+#define LAST_HIGH_ACCURACY_LATENCY_NS 350000UL  // in ns -> 250.000ns . This is the last binning latency
+
+#define HIGH_ACCURACY_BIN_SIZE_NS 100UL         // in ns, shall be a divisor of last_high_accuracy and ns_in_a sec
+
+#define HIGH_ACCURACY_BINS_IN_A_SECOND ( _NS_IN_A_SECOND / HIGH_ACCURACY_BIN_SIZE_NS) // this is 10M currently
+
+#define LAST_HIGH_ACCURACY_LATENCY_US ( LAST_HIGH_ACCURACY_LATENCY_NS / _1K )
+
+// MAX_BINS is the number of allocated bins (max number of binning, not the value of the last.)
+#define MAX_BINS (LAST_HIGH_ACCURACY_LATENCY_NS / HIGH_ACCURACY_BIN_SIZE_NS)
+
 // Ethernet frame overhead calculations
 
 #define PHYSICAL_OVERHEAD 24  // 4(FCS) + 8(preamble) + 12(IFG)
@@ -306,11 +320,11 @@ static struct port_stats {
     uint64_t interval_max_latency;
     uint64_t interval_squared_latency_sum;
     uint64_t histogram[MAX_BINS];
-    uint64_t interval_histogram[MAX_BINS];
     uint32_t max_bin;            // Track highest bin with data
+#ifdef DEBUG
+    uint64_t interval_histogram[MAX_BINS];
     uint32_t interval_max_bin;
     uint64_t interval_start_tsc;
-#ifdef DEBUG
     rte_spinlock_t interval_lock; // Lock for interval stats
 #endif
 } stats;
@@ -453,36 +467,33 @@ static void setup_payload(char *payload) {
 
 
 
-/* Convert latency in TSC cycles to a histogram bin index */
-static inline uint64_t latency_ns_to_bin(uint64_t latency_ns)
-{
-    // - until 50us, collect latency every 100ns
-    // - afterwards, every 1 us
-    // - if above MAX_BINS, clamp to MAX_BINS
+// // //    /* Convert latency in TSC cycles to a histogram bin index */
+// // //    static inline uint64_t latency_ns_to_bin(uint64_t latency_ns)
+// // //    {
+// // //        // - until 50us, collect latency every 100ns
+// // //        // - afterwards, every 1 us
+// // //        // - if above MAX_BINS, clamp to MAX_BINS
+// // //    
+// // //        if ( latency_ns < LAST_HIGH_ACCURACY_LATENCY_NS) {
+// // //            uint64_t bin = latency_ns/ HIGH_ACCURACY_BIN_SIZE_NS;
+// // //            if (bin >= NUM_HIGH_ACCURACY_BINS){
+// // //                bin = NUM_HIGH_ACCURACY_BINS-1;
+// // //            } 
+// // //            return bin;
+// // //        } else {
+// // //            uint32_t bin = NUM_HIGH_ACCURACY_BINS + ((latency_ns - LAST_HIGH_ACCURACY_LATENCY_NS)/ LOW_ACCURACY_BIN_SIZE_NS);
+// // //            if (bin >= MAX_BINS){
+// // //                bin = MAX_BINS - 1;
+// // //            } 
+// // //            return bin;
+// // //        }
+// // //    }
 
-    if ( latency_ns < LAST_HIGH_ACCURACY_LATENCY_NS) {
-        uint64_t bin = latency_ns/ HIGH_ACCURACY_BIN_SIZE_NS;
-        if (bin >= NUM_HIGH_ACCURACY_BINS){
-            bin = NUM_HIGH_ACCURACY_BINS-1;
-        } 
-        return bin;
-    } else {
-        uint32_t bin = NUM_HIGH_ACCURACY_BINS + ((latency_ns - LAST_HIGH_ACCURACY_LATENCY_NS)/ LOW_ACCURACY_BIN_SIZE_NS);
-        if (bin >= MAX_BINS){
-            bin = MAX_BINS - 1;
-        } 
-        return bin;
-    }
-}
 
 
-
-static double bin_lower_edge_us(uint32_t bin)
-{
-    if (bin < 500)
-        return (double)bin * 0.1;
-    else
-        return 50.0 + (double)(bin - 500) * 0.5;
+// has to find the lowest edge in NS of the bin-th bin
+static inline uint64_t bin_lower_edge_ns(uint64_t ith_bin_i){
+    return ith_bin_i * HIGH_ACCURACY_BIN_SIZE_NS;
 }
 
 
@@ -2194,13 +2205,19 @@ static void reset_interval_stats(void) {
 // using Welford algorithm
 static int lcore_recv(__rte_unused void *arg) {
     const uint16_t rx_port = PORT_RECEIVE_ON;
-    uint64_t tsc_hz = rte_get_tsc_hz();
 
-    uint64_t _1G_over_tscHz = 1000000000UL / tsc_hz;
+    uint64_t tsc_hz = rte_get_tsc_hz(); // this returns like 2.500.000.000 if frequency is 2.5GHz
 
+    // how many tsc per bin = <<how many tsc per second>> / <<how many bins per second>>
+    uint64_t tsc_per_high_accuracy_bin = tsc_hz / HIGH_ACCURACY_BINS_IN_A_SECOND; // <2500M / 10M = 250>. 
+ 
     struct rte_mbuf *rx_bufs[MAX_BURST_SIZE];
 
     printf("--- --- --- Starting receive loop on lcore %u --- --- ---\n\n\n", rte_lcore_id());
+
+    printf("selected HIGH_ACCURACY_BIN_SIZE_NS %lu\n", HIGH_ACCURACY_BIN_SIZE_NS);
+    printf("tsc_hz %lu cycles per second.\n",tsc_hz);
+    printf("tsc_per_high_accuracy_bin %lu cycles per bin.\n ",  tsc_per_high_accuracy_bin);
 
     // Add port metadata check
     struct rte_eth_link link;
@@ -2275,11 +2292,15 @@ static int lcore_recv(__rte_unused void *arg) {
                 rte_pktmbuf_free(m);
                 continue;
             }
+            // latency here in tsc. Time Stamp Counter
             uint64_t latency = recv_ts - sent_ts;
+                        
+            // uint64_t bin = latency_ns_to_bin(latency_ns);
             
-            uint64_t latency_ns = latency * _1G_over_tscHz;
-            
-            uint64_t bin = latency_ns_to_bin(latency_ns);
+            uint64_t bin = latency / tsc_per_high_accuracy_bin;
+            if (bin > MAX_BINS){
+                bin = MAX_BINS;
+            }
 
             #ifdef HIGH_LAT_VERBOSE
             if (max_latency_this_burst==0 && latency_ns>= huge_latency_warning_ns){
@@ -2292,9 +2313,10 @@ static int lcore_recv(__rte_unused void *arg) {
 
             if (stats_enabled) {
                 stats.histogram[bin]++; 
-                if (bin > stats.max_bin) {
-                    stats.max_bin = bin;
-                }
+                // this can be done when printing global stats for ease.
+                // // // if (bin > stats.max_bin) {
+                // // //     stats.max_bin = bin;
+                // // // }
             
                 // Update Welford's algorithm for overall standard deviation
                 sample_count++;
@@ -2308,7 +2330,7 @@ static int lcore_recv(__rte_unused void *arg) {
                 stats.latency_total += latency;
                 stats.squared_latency_sum += latency * latency;
                 
-                if (latency < stats.min_latency || stats.min_latency == 0){
+                if (latency < stats.min_latency){
                     stats.min_latency = latency;
                 }
                 if (latency > stats.max_latency){
@@ -2369,28 +2391,31 @@ static void
 print_histogram_buckets(void)
 {
     printf("\n---- Latency Histogram Buckets (variable width) ----\n");
-    printf("  (0.1 us bins up to 50 us, then 0.5 us bins)\n");
+    printf("  (%lu ns bins up to %lu ns == %lu us)\n", HIGH_ACCURACY_BIN_SIZE_NS, LAST_HIGH_ACCURACY_LATENCY_NS);
     printf("Latency (us)  | Count\n");
     printf("-----------------------\n");
 
     uint64_t total_in_bins = 0;
-    double weighted_sum = 0.0;
+    uint64_t weighted_sum = 0.0;
 
-    for (uint32_t bin = 0; bin <= stats.max_bin; bin++) {
-        uint64_t count = stats.histogram[bin];
+
+    for (uint64_t bin = 0; bin < MAX_BINS; bin++) {
+        uint64_t count = stats.histogram[bin]; // this is how many packets entered this bin.
         if (count > 0) {
-            double lower = bin_lower_edge_us(bin);
+            // get latency of lower part of the bin
+            // // double lower_us = bin_lower_edge_us(bin);
+            uint64_t lower_ns = bin_lower_edge_ns(bin);
 
             if (bin == MAX_BINS - 1) {
                 /* Overflow bucket - print as ">= lower" */
-                printf("  >= %7.2f     | %lu\n", lower, count);
+                printf("   >= %13lu    | %lu\n", lower_ns, count);
             } else {
-                printf("%7.2f -%7.2f | %lu\n",
-                       lower, lower + ((bin < 500) ? 0.1 : 0.5), count);
+                printf("%13lu -  %13lu | %lu\n",
+                       lower_ns, lower_ns + HIGH_ACCURACY_BIN_SIZE_NS, count);
             }
 
             total_in_bins += count;
-            weighted_sum += lower * count;   /* use lower edge as representative */
+            weighted_sum += lower_ns * count;   /* use lower edge as representative */
         }
     }
 
@@ -2438,6 +2463,11 @@ calculate_percentile(uint64_t histogram[], uint32_t max_bin,
     /* Fallback: last known bin */
     return bin_lower_edge_us(max_bin > 0 ? max_bin : 0);
 }
+
+
+
+
+
 
 
 
@@ -3327,9 +3357,11 @@ int main(int argc, char **argv) {
     // Reset all statistics to start fresh after warmup
     memset(&stats, 0, sizeof(stats));
     stats.min_latency = UINT64_MAX;
+    stats.max_latency = 0;
 
     #ifdef DEBUG
     stats.interval_min_latency = UINT64_MAX;
+    stats.interval_max_latency = 0;
     reset_interval_stats();                 // sets interval_start_tsc to now
     #endif
 
