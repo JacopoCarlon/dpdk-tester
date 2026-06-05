@@ -337,8 +337,8 @@ struct overall_stats {
     uint64_t max_latency;
     double avg_latency;
     double stddev_latency;
-    uint64_t p95;
-    uint64_t p99;
+    uint64_t p95_ns;
+    uint64_t p99_ns;
 } overall;
 
 
@@ -2400,7 +2400,7 @@ print_histogram_buckets(void)
 {
     printf("\n---- Latency Histogram Buckets (variable width) ----\n");
     printf("  (%lu ns bins up to %lu ns == %lu us)\n", HIGH_ACCURACY_BIN_SIZE_NS, LAST_HIGH_ACCURACY_LATENCY_NS);
-    printf("Latency (us)  | Count\n");
+    printf("Latency (ns)  | Count\n");
     printf("-----------------------\n");
 
     uint64_t total_in_bins = 0;
@@ -2535,10 +2535,10 @@ static void print_interval_stats(void) {
     }
     
     if (interval_packets > 0) {
-        uint64_t p99 = calculate_percentile(stats.interval_histogram, 
+        uint64_t p99_ns = calculate_percentile(stats.interval_histogram, 
                                           stats.interval_max_bin, 
                                           interval_packets, 0.99);
-        uint64_t p95 = calculate_percentile(stats.interval_histogram, 
+        uint64_t p95_ns = calculate_percentile(stats.interval_histogram, 
                                           stats.interval_max_bin, 
                                           interval_packets, 0.95);
         
@@ -2553,8 +2553,8 @@ static void print_interval_stats(void) {
             }
         }
         printf("Latency Statistics (us):\n");
-        printf("  95th percentile: %lu us\n", p95);
-        printf("  99th percentile: %lu us\n", p99);
+        printf("  95th percentile: %lu us\n", p95_ns);
+        printf("  99th percentile: %lu us\n", p99_ns);
         printf("  Min: %.4f us\n", (double)stats.interval_min_latency / tsc_per_us);
         printf("  Max: %.4f us\n", (double)stats.interval_max_latency / tsc_per_us);
         printf("  Avg: %.4f us\n", avg_latency / (tsc_hz / 1e6));        
@@ -2587,8 +2587,8 @@ static void calculate_overall_stats(void) {
     
     if (stats.rx > 0) {
         overall.avg_latency = (double)stats.latency_total_tsc / stats.rx;
-        overall.p95 = calculate_percentile(stats.histogram, stats.max_bin, overall.total_rx, 0.95);
-        overall.p99 = calculate_percentile(stats.histogram, stats.max_bin, overall.total_rx, 0.99);
+        overall.p95_ns = calculate_percentile(stats.histogram, stats.max_bin, overall.total_rx, 0.95);
+        overall.p99_ns = calculate_percentile(stats.histogram, stats.max_bin, overall.total_rx, 0.99);
         // Use the results from Welford's algorithm
         if (sample_count > 1) {
             overall.stddev_latency = sqrt(sample_M2 / (sample_count - 1));
@@ -2649,15 +2649,15 @@ static void print_overall_stats(void) {
     
     if (overall.total_rx > 0) {
         double tsc_per_us = tsc_hz / 1e6;
-        printf("Overall 95th percentile latency: %lu ns\n", overall.p95);
-        printf("Overall 99th percentile latency: %lu ns\n", overall.p99);
-        printf("Overall Min latency: %.4f us\n", 
+        printf("Overall 95th percentile latency: %.7f us\n", ((double)overall.p95_ns/1e6));
+        printf("Overall 99th percentile latency: %.7f us\n", ((double)overall.p99_ns/1e6));
+        printf("Overall Min latency: %.7f us\n", 
                (double)overall.min_latency / tsc_per_us);
-        printf("Overall Max latency: %.4f us\n", 
+        printf("Overall Max latency: %.7f us\n", 
                (double)overall.max_latency / tsc_per_us);
-        printf("Overall Avg latency: %.4f us\n", 
+        printf("Overall Avg latency: %.7f us\n", 
                overall.avg_latency / tsc_per_us);
-        printf("Overall StdDev latency: %.4f us\n", 
+        printf("Overall StdDev latency: %.7f us\n", 
                overall.stddev_latency / tsc_per_us);
     } else {
         printf("No packets received overall\n");
