@@ -308,22 +308,22 @@ int64_t DEFAULT_WARMUP_US = 50000;
 static struct port_stats {
     uint64_t tx;
     uint64_t rx;
-    uint64_t latency_total;
+    uint64_t latency_total_tsc;
     uint64_t min_latency;
     uint64_t max_latency;
     uint64_t squared_latency_sum;
     // Interval stats
+    uint64_t histogram[MAX_BINS];
+    uint64_t max_bin;            // Track highest bin with data
+#ifdef DEBUG
     uint64_t interval_tx;
     uint64_t interval_rx;
-    uint64_t interval_latency_total;
+    uint64_t interval_latency_total_tsc;
     uint64_t interval_min_latency;
     uint64_t interval_max_latency;
     uint64_t interval_squared_latency_sum;
-    uint64_t histogram[MAX_BINS];
-    uint32_t max_bin;            // Track highest bin with data
-#ifdef DEBUG
     uint64_t interval_histogram[MAX_BINS];
-    uint32_t interval_max_bin;
+    uint64_t interval_max_bin;
     uint64_t interval_start_tsc;
     rte_spinlock_t interval_lock; // Lock for interval stats
 #endif
@@ -337,8 +337,8 @@ struct overall_stats {
     uint64_t max_latency;
     double avg_latency;
     double stddev_latency;
-    double p95;
-    double p99;
+    uint64_t p95;
+    uint64_t p99;
 } overall;
 
 
@@ -824,10 +824,12 @@ static int lcore_send_multiple_exp_logn(__rte_unused void *arg) {
                 /* Update statistics */
                 if (stats_enabled) {
                     stats.tx += sent;
-                    stats.interval_tx += sent;
                     uint64_t wire_bytes = WIRE_SIZE(PACKET_SIZE) * sent;
                     total_wire_bytes += wire_bytes;
-                interval_wire_bytes += wire_bytes;
+                    #ifdef DEBUG
+                    stats.interval_tx += sent;
+                    interval_wire_bytes += wire_bytes;
+                    #endif 
             }
             
             /* Rate limiting based on target bitrate */
@@ -1197,10 +1199,12 @@ static int lcore_send_web_traffic(__rte_unused void *arg) {
 
             if (stats_enabled) {
                 stats.tx += sent;
-                stats.interval_tx += sent;
                 uint64_t wire_bytes = WIRE_SIZE(PACKET_SIZE) * sent;
                 total_wire_bytes += wire_bytes;
+                #ifdef DEBUG
+                stats.interval_tx += sent;
                 interval_wire_bytes += wire_bytes;
+                #endif
             }
 
             // Rate limiting (same as FTP)
@@ -1566,13 +1570,15 @@ static int lcore_send_game_traffic(__rte_unused void *arg) {
             // so we need to account for the actual wire bytes.
             if (stats_enabled) {
                 stats.tx += sent;
-                stats.interval_tx += sent;
                 uint64_t wire_bytes = 0;
                 for (int i = 0; i < sent; i++) {
                     wire_bytes += WIRE_SIZE(pkt_sizes[i] - sizeof(struct rte_ether_hdr));
                 }
                 total_wire_bytes += wire_bytes;
+                #ifdef DEBUG
+                stats.interval_tx += sent;
                 interval_wire_bytes += wire_bytes;
+                #endif
             }
 
             // Rate limiting based on target bitrate (if specified)
@@ -2118,11 +2124,13 @@ static int lcore_send(__rte_unused void *arg) {
  
         if (stats_enabled) {
             stats.tx += sent;
-            stats.interval_tx += sent;
             
             uint64_t wire_bytes = WIRE_SIZE(PACKET_SIZE) * sent;
             total_wire_bytes += wire_bytes;
+            #ifdef DEBUG
+            stats.interval_tx += sent;
             interval_wire_bytes += wire_bytes;
+            #endif
         }
 
         if (traffic_config.pattern == PATTERN_BURST_PAUSE) {
@@ -2179,18 +2187,16 @@ static int lcore_send(__rte_unused void *arg) {
 static void reset_interval_stats(void) {
 #ifdef DEBUG
     rte_spinlock_lock(&stats.interval_lock);
-#endif
     memset(stats.interval_histogram, 0, sizeof(stats.interval_histogram));
     stats.interval_max_bin = 0;
     stats.interval_tx = 0;
     stats.interval_rx = 0;
-    stats.interval_latency_total = 0;
+    stats.interval_latency_total_tsc = 0;
     stats.interval_min_latency = UINT64_MAX;
     stats.interval_max_latency = 0;
     stats.interval_squared_latency_sum = 0;
     interval_wire_bytes = 0;
     stats.interval_start_tsc = rte_rdtsc_precise();
-#ifdef DEBUG
     rte_spinlock_unlock(&stats.interval_lock);
 #endif
 }
@@ -2247,7 +2253,9 @@ static int lcore_recv(__rte_unused void *arg) {
 
         if (stats_enabled) {
             stats.rx += nb_rx;
+            #ifdef DEBUG
             stats.interval_rx += nb_rx;
+            #endif
         }
 
         uint64_t max_latency_this_burst = 0;
@@ -2327,7 +2335,7 @@ static int lcore_recv(__rte_unused void *arg) {
                 
                 // Update overall stats
                 // TODO: these might overflow ?
-                stats.latency_total += latency;
+                stats.latency_total_tsc += latency;
                 stats.squared_latency_sum += latency * latency;
                 
                 if (latency < stats.min_latency){
@@ -2341,7 +2349,7 @@ static int lcore_recv(__rte_unused void *arg) {
                 #ifdef DEBUG
                 rte_spinlock_lock(&stats.interval_lock);
                 // Update interval stats
-                stats.interval_latency_total += latency;
+                stats.interval_latency_total_tsc += latency;
                 stats.interval_squared_latency_sum += latency * latency;
                 
                 if (latency < stats.interval_min_latency)
@@ -2442,26 +2450,26 @@ print_histogram_buckets(void)
 
 
 
-static double
-calculate_percentile(uint64_t histogram[], uint32_t max_bin,
-                     uint64_t total, double percentile)
-{
-    if (total == 0) return 0.0;
-
+// TODO: update this with ns bins.
+// returns the latency in ns that reaches the required percentile of packets sent.
+static uint64_t calculate_percentile(uint64_t histogram[], uint64_t max_bin,
+                     uint64_t total, double percentile) {
+    if (total == 0) {
+        return 0;
+    }
     uint64_t desired = (uint64_t)ceil(percentile * total);
     uint64_t accumulated = 0;
 
-    for (uint32_t bin = 0; bin <= max_bin; bin++) {
-        accumulated += histogram[bin];
+    for (uint64_t ith_bin_i = 0; ith_bin_i <= max_bin; ith_bin_i++) {
+        accumulated += histogram[ith_bin_i];
         if (accumulated >= desired) {
-            /* Return the **upper edge** of the bin to be conservative
-               (or you can return the lower edge).  Here we return the
-               bin's lower edge to match the histogram printout. */
-            return bin_lower_edge_us(bin);
+            // With this bin we have reached the required to match that percentile; 
+            //  return the lower edge of this bin.
+            return bin_lower_edge_ns(ith_bin_i);
         }
     }
-    /* Fallback: last known bin */
-    return bin_lower_edge_us(max_bin > 0 ? max_bin : 0);
+    // if not found percentile return last.
+    return bin_lower_edge_ns(max_bin > 0 ? max_bin : 0);
 }
 
 
@@ -2527,15 +2535,15 @@ static void print_interval_stats(void) {
     }
     
     if (interval_packets > 0) {
-        double p99 = calculate_percentile(stats.interval_histogram, 
+        uint64_t p99 = calculate_percentile(stats.interval_histogram, 
                                           stats.interval_max_bin, 
                                           interval_packets, 0.99);
-        double p95 = calculate_percentile(stats.interval_histogram, 
+        uint64_t p95 = calculate_percentile(stats.interval_histogram, 
                                           stats.interval_max_bin, 
                                           interval_packets, 0.95);
         
         double tsc_per_us = tsc_hz / 1e6;
-        double avg_latency = (double)stats.interval_latency_total / interval_packets;
+        double avg_latency = (double)stats.interval_latency_total_tsc / interval_packets;
         double stddev = 0.0;
         if (interval_packets > 1) {
             double variance = ((double)stats.interval_squared_latency_sum / interval_packets) - 
@@ -2545,8 +2553,8 @@ static void print_interval_stats(void) {
             }
         }
         printf("Latency Statistics (us):\n");
-        printf("  95th percentile: %.4f us\n", p95);
-        printf("  99th percentile: %.4f us\n", p99);
+        printf("  95th percentile: %lu us\n", p95);
+        printf("  99th percentile: %lu us\n", p99);
         printf("  Min: %.4f us\n", (double)stats.interval_min_latency / tsc_per_us);
         printf("  Max: %.4f us\n", (double)stats.interval_max_latency / tsc_per_us);
         printf("  Avg: %.4f us\n", avg_latency / (tsc_hz / 1e6));        
@@ -2578,7 +2586,7 @@ static void calculate_overall_stats(void) {
     overall.max_latency = stats.max_latency;
     
     if (stats.rx > 0) {
-        overall.avg_latency = (double)stats.latency_total / stats.rx;
+        overall.avg_latency = (double)stats.latency_total_tsc / stats.rx;
         overall.p95 = calculate_percentile(stats.histogram, stats.max_bin, overall.total_rx, 0.95);
         overall.p99 = calculate_percentile(stats.histogram, stats.max_bin, overall.total_rx, 0.99);
         // Use the results from Welford's algorithm
@@ -2641,8 +2649,8 @@ static void print_overall_stats(void) {
     
     if (overall.total_rx > 0) {
         double tsc_per_us = tsc_hz / 1e6;
-        printf("Overall 95th percentile latency: %.4f us\n", overall.p95);
-        printf("Overall 99th percentile latency: %.4f us\n", overall.p99);
+        printf("Overall 95th percentile latency: %lu ns\n", overall.p95);
+        printf("Overall 99th percentile latency: %lu ns\n", overall.p99);
         printf("Overall Min latency: %.4f us\n", 
                (double)overall.min_latency / tsc_per_us);
         printf("Overall Max latency: %.4f us\n", 
