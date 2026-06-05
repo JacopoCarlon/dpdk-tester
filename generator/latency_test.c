@@ -2766,8 +2766,8 @@ static void calculate_overall_stats(void) {
 
         overall.p95_ns = calculate_percentile(stats.histogram, MAX_BINS, overall.total_rx, 0.95);
         overall.p99_ns = calculate_percentile(stats.histogram, MAX_BINS, overall.total_rx, 0.99);
-        overall.p99_9ns = calculate_percentile(stats.histogram, MAX_BINS, overall.total_rx, 0.999);
-        overall.p99_99ns = calculate_percentile(stats.histogram, MAX_BINS, overall.total_rx, 0.9999);
+        overall.p99_9_ns = calculate_percentile(stats.histogram, MAX_BINS, overall.total_rx, 0.999);
+        overall.p99_99_ns = calculate_percentile(stats.histogram, MAX_BINS, overall.total_rx, 0.9999);
         
         overall.p95_ns_accurate = calculate_percentile_accurate(stats.histogram, MAX_BINS, overall.total_rx, 0.95);
         overall.p99_ns_accurate = calculate_percentile_accurate(stats.histogram, MAX_BINS, overall.total_rx, 0.99);
