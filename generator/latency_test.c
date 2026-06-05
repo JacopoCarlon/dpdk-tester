@@ -2844,8 +2844,11 @@ static void print_overall_stats(void) {
         printf("Overall 99th percentile latency: %.7f us\n", p99fus);
 
 
-        printf("Overall 95th percentile latency ACCURATE: %.13Lf us\n", overall.p95_ns_accurate);
-        printf("Overall 99th percentile latency ACCURATE: %.13Lf us\n", overall.p99_ns_accurate);
+
+        long double p95fusAccurate = overall.p95_ns_accurate / 1000.0;
+        long double p99fusAccurate = overall.p99_ns_accurate / 1000.0;
+        printf("Overall 95th percentile latency ACCURATE: %.13Lf us\n", p95fusAccurate);
+        printf("Overall 99th percentile latency ACCURATE: %.13Lf us\n", p99fusAccurate);
         
         #ifdef ONLINE
         printf(">>>Overall Min latency Online: %.7f us\n", (double)overall.onlineMin_tsc / tsc_per_us);
