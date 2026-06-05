@@ -2504,13 +2504,13 @@ static double calculate_avg_latency_ex_post(uint64_t* histogram, uint64_t max_bi
         total_packets += histogram[i];
         uint64_t ith_latency_ns = i*HIGH_ACCURACY_BIN_SIZE_NS + half_bin_latency_ns;
         total_ns_latency_cumulative += (histogram[i]*ith_latency_ns);
-        printf("bin i:%lu, latency of bin:%lu, count in this bin:%lu, total_ns_latency_cumulative%lu\n", i, ith_latency_ns, histogram[i], total_ns_latency_cumulative);
+        // printf("bin i:%lu, latency of bin:%lu, count in this bin:%lu, total_ns_latency_cumulative%lu\n", i, ith_latency_ns, histogram[i], total_ns_latency_cumulative);
     }
     if (total_packets == 0){
         return -1.0;
     }
 
-    printf("\n\ntotal_ns_latency_cumulative %lu, total_packets %lu\n\n", total_ns_latency_cumulative, total_packets);
+    // printf("\n\ntotal_ns_latency_cumulative %lu, total_packets %lu\n\n", total_ns_latency_cumulative, total_packets);
     double avgep = (double)total_ns_latency_cumulative / (double)total_packets;
     return avgep;
 }
@@ -2555,11 +2555,11 @@ static double calculate_stdev_ex_post(uint64_t* const histogram, uint64_t max_bi
 
     long double varianceLD = diff / (ldn-1);
 
-    printf("<long double_type> varianceLD : %.8Lf .\n", varianceLD);
+    // printf("<long double_type> varianceLD : %.8Lf .\n", varianceLD);
 
     double variance = (double) varianceLD;
 
-    printf("<double_type> variance : %.8f .\n", variance);
+    // printf("<double_type> variance : %.8f .\n", variance);
     if (variance < 0){
         return -1.0;
     }
@@ -2670,6 +2670,7 @@ static void print_interval_stats(void) {
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 
+// reminder this function touches overall fields. can it be done better? 
 static void update_min_max_overall_stats(uint64_t histogram[]){
     uint64_t min_lat_ns = UINT64_MAX;
     uint64_t max_lat_ns = 0;
@@ -2713,8 +2714,6 @@ static void calculate_overall_stats(void) {
     overall.onlineMax_tsc = stats.max_latency;
     #endif
     update_min_max_overall_stats(stats.histogram);
-
-
 
     if (stats.rx > 0) {
         #ifdef ONLINE
@@ -2768,12 +2767,12 @@ static void print_overall_stats(void) {
     if (overall.total_tx > 0) {
         int64_t loss = (int64_t)overall.total_tx - (int64_t)overall.total_rx;
         
-        printf("Total loss of packets: %ld\n", loss);
+        printf("Total number of packets lost: %ld.\n", loss);
         if (loss < 0) {
             printf("___ weirdly, loss is negative, i.e. we recevide more than we sent ??? ___ \n");
             //loss = 0;
         }
-        printf("Overall Loss: %.7f%%\n", 
+        printf("Overall Packet Loss: %.7f%%\n", 
                 100.0 * loss / (double)overall.total_tx);
     } else {
         printf("Overall Loss: N/A\n");
@@ -2781,21 +2780,19 @@ static void print_overall_stats(void) {
 
     // Calculate correct overall duration
     uint64_t end_tsc = rte_rdtsc_precise();
-    double total_duration_sec = (double)(end_tsc - global_start_tsc) / tsc_hz;  // Total runtime
+    long double total_duration_sec = ((long double)(end_tsc - global_start_tsc)) / ((long double)tsc_hz);  // Total runtime
     
     if (total_duration_sec > 0 && overall.total_rx > 0) {
         uint64_t wire_size = WIRE_SIZE(PACKET_SIZE);  // PACKET_SIZE + 24
-        double avg_pps = (double)overall.total_rx / total_duration_sec;
-        double avg_bps = avg_pps * wire_size * 8.0;
+        long double avg_pps = (long double)overall.total_rx / total_duration_sec;
+        long double avg_bps = avg_pps * wire_size * 8.0;
         
-        printf("Average wire rate: %.7f Gbps (%.7f Mpps)\n", 
-               avg_bps / 1e9, avg_pps / 1e6);
+        printf("Average wire rate: %.7Lf Gbps (%.7Lf Mpps)\n", avg_bps / 1e9, avg_pps / 1e6);
         
         // Theoretical maximum calculation
-        double max_pps = 10.0e9 / (wire_size * 8.0);
-        printf("Theoretical max (for a 10Gbps): %.7f Mpps (for %lu-byte packets with %lu-byte wire size)\n",
-               max_pps / 1e6, PACKET_SIZE, wire_size);
-        printf("Achieved: %.7f of line rate (for a 10Gbps)\n", (avg_pps / max_pps) * 100);
+        long double max_pps = 10.0e9 / (wire_size * 8.0);
+        printf("Theoretical max (for a 10Gbps): %.7Lf Mpps (for %lu-byte packets with %lu-byte wire size)\n",max_pps / 1e6, PACKET_SIZE, wire_size);
+        printf("Achieved: %.7Lf of line rate (for a 10Gbps)\n", (avg_pps / max_pps) * 100);
     }
     
     if (overall.total_rx > 0) {
@@ -2812,29 +2809,29 @@ static void print_overall_stats(void) {
         printf("Overall 99th percentile latency: %.7f us\n", p99fus);
         
         #ifdef ONLINE
-        printf("Overall Min latency Online: %.7f us\n", (double)overall.onlineMin_tsc / tsc_per_us);
-        printf("Overall Max latency Online: %.7f us\n", (double)overall.onlineMax_tsc / tsc_per_us);
+        printf(">>>Overall Min latency Online: %.7f us\n", (double)overall.onlineMin_tsc / tsc_per_us);
+        printf(">>>Overall Max latency Online: %.7f us\n", (double)overall.onlineMax_tsc / tsc_per_us);
         #endif       
         double minLatfus = (double)overall.min_latency_ns / 1000.0;
         double maxLatfus = (double)overall.max_latency_ns / 1000.0;
         printf("Overall Min latency from bins: %.7f us\n", minLatfus);
-        printf("Overall Max latency from bins: %.7f us\n", minLatfus);
+        printf("Overall Max latency from bins: %.7f us\n", maxLatfus);
         
 
         #ifdef ONLINE
-        printf("Overall Avg latency: %.7f us\n", overall.avg_latency / tsc_per_us);
-        printf("Overall StdDev latency: %.7f us\n", overall.stddev_latency / tsc_per_us);
+        printf(">>>Overall Avg latency: %.7f us\n", overall.avg_latency / tsc_per_us);
+        printf(">>>Overall StdDev latency: %.7f us\n", overall.stddev_latency / tsc_per_us);
         #endif
         double avglep = overall.avg_latency_ex_post / 1000.0;
         double avgstdep = overall.stddev_latency_ex_post / 1000.0; 
-        printf("\nOverall Avg latency from bins: %.7f us\n", avglep );
-        printf("Overall StdDev latency from bins: %.7f us\n\n", avgstdep);
+        printf("Overall Avg latency from bins: %.7f us\n", avglep );
+        printf("Overall StdDev latency from bins: %.7f us\n", avgstdep);
 
     } else {
         printf("\n\nNo packets received overall\n\n");
     }
     printf("===============================\n");
-    printf("Test duration: %.11f seconds\n", total_duration_sec);
+    printf("Test duration: %.13f seconds\n", total_duration_sec);
     printf("===============================\n");
 }
 
