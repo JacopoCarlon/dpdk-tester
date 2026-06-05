@@ -351,6 +351,8 @@ struct overall_stats {
     double stddev_latency_ex_post;  // values calculated form bins after stop.         
     uint64_t p95_ns;    // the percentiles are always extracted from the bins.
     uint64_t p99_ns;    // the percentiles are always extracted from the bins.
+    long double p95_ns_accurate;
+    long double p99_ns_accurate;
 } overall;
 
 
@@ -2423,7 +2425,7 @@ print_histogram_buckets(void)
     printf("-----------------------\n");
 
     uint64_t total_in_bins = 0;
-    uint64_t weighted_sum = 0.0;
+    uint64_t weighted_sum = 0;
 
 
     for (uint64_t bin = 0; bin < MAX_BINS; bin++) {
@@ -2469,9 +2471,7 @@ print_histogram_buckets(void)
 
 
 
-
-// TODO: update this with ns bins.
-// returns the latency in ns that reaches the required percentile of packets sent.
+// returns the latency in ns fo the bin that reaches the required percentile of packets sent.
 static uint64_t calculate_percentile(uint64_t histogram[], uint64_t max_bin,
                      uint64_t total, double percentile) {
     if (total == 0) {
@@ -2490,6 +2490,37 @@ static uint64_t calculate_percentile(uint64_t histogram[], uint64_t max_bin,
     }
     // if not found percentile return last.
     return bin_lower_edge_ns(max_bin > 0 ? max_bin : 0);
+}
+
+
+// improves on the previous by normalizing ?? attempt 0
+static long double calculate_percentile_accurate(uint64_t histogram[], uint64_t max_bin,
+                     uint64_t total, double percentile) {
+    if (total == 0) {
+        return 0;
+    }
+    uint64_t desired = (uint64_t)ceil((long double)percentile * (long double)total);
+    uint64_t accumulated = 0;
+
+    for (uint64_t ith_bin_i = 0; ith_bin_i <= max_bin; ith_bin_i++) {
+        accumulated += histogram[ith_bin_i];
+        if (accumulated >= desired) {
+            // With this bin we have reached the required to match that percentile; 
+            //  return the lower edge of this bin.
+            uint64_t pkt_this_bin = histogram[i];
+            uint64_t before_this_bin = accumulated - pkt_this_bin;
+            uint64_t missing = desired - before_this_bin;
+            long double percentage = ((long double)missing) / ((long double)pkt_this_bin);
+            long double ns_in_bin_prct = percentage * (long double)HIGH_ACCURACY_BIN_SIZE_NS;
+            long double this_bin_base = (long double)bin_lower_edge_ns(ith_bin_i); 
+
+            long double exact_match = this_bin_base + ns_in_bin_prct;
+
+            return exact_match;
+        }
+    }
+    // if not found percentile return last.
+    return bin_lower_edge_ns(max_bin > 0 ? (long double)max_bin : 0.0);
 }
 
 
@@ -2730,6 +2761,9 @@ static void calculate_overall_stats(void) {
         overall.p95_ns = calculate_percentile(stats.histogram, MAX_BINS, overall.total_rx, 0.95);
         overall.p99_ns = calculate_percentile(stats.histogram, MAX_BINS, overall.total_rx, 0.99);
         
+        overall.p95_ns_accurate = calculate_percentile_accurate(stats.histogram, MAX_BINS, overall.total_rx, 0.95);
+        overall.p99_ns_accurate = calculate_percentile_accurate(stats.histogram, MAX_BINS, overall.total_rx, 0.99);
+        
         overall.avg_latency_ex_post = calculate_avg_latency_ex_post(stats.histogram, MAX_BINS);
         printf("avg_latency_ex_post : %10.15f\n", overall.avg_latency_ex_post);
         if (overall.avg_latency_ex_post < 0){
@@ -2808,6 +2842,10 @@ static void print_overall_stats(void) {
         double p99fus = overall.p99_ns / 1000.0;
         printf("Overall 95th percentile latency: %.7f us\n", p95fus);
         printf("Overall 99th percentile latency: %.7f us\n", p99fus);
+
+
+        printf("Overall 95th percentile latency ACCURATE: %.13f us\n", overall.p95_ns_accurate);
+        printf("Overall 99th percentile latency ACCURATE: %.13f us\n", overall.p99_ns_accurate);
         
         #ifdef ONLINE
         printf(">>>Overall Min latency Online: %.7f us\n", (double)overall.onlineMin_tsc / tsc_per_us);

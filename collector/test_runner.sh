@@ -117,7 +117,7 @@ EXPERIMENTS=(
     "baseline -B 500"
     "baseline -B 700"
     "baseline -B 1000"
-    #"baseline -B 2000"
+    "baseline -B 2000"
     # Pause - vary pause_duration (nanoseconds)
     "pause -q 1"
     #"pause -q 2"
