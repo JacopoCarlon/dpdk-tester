@@ -2840,8 +2840,8 @@ static void print_overall_stats(void) {
 
         double p95fus = overall.p95_ns / 1000.0;
         double p99fus = overall.p99_ns / 1000.0;
-        printf("Overall 95th percentile latency: %15.7f us\n", p95fus);
-        printf("Overall 99th percentile latency: %15.7f us\n", p99fus);
+        printf("Overall 95th percentile latency: %14.7f us\n", p95fus);
+        printf("Overall 99th percentile latency: %14.7f us\n", p99fus);
 
 
 
@@ -2851,12 +2851,12 @@ static void print_overall_stats(void) {
         printf("Overall 99th percentile latency ACCURATE: %17.13Lf us\n", p99fusAccurate);
         
         #ifdef ONLINE
-        printf(">>>Overall Min latency Online: %16.7f us\n", (double)overall.onlineMin_tsc / tsc_per_us);
+        printf(">>>Overall Min latency Online: %13.7f us\n", (double)overall.onlineMin_tsc / tsc_per_us);
         printf(">>>Overall Max latency Online: %13.7f us\n", (double)overall.onlineMax_tsc / tsc_per_us);
         #endif       
         double minLatfus = (double)overall.min_latency_ns / 1000.0;
         double maxLatfus = (double)overall.max_latency_ns / 1000.0;
-        printf("Overall Min latency from bins: %16.7f us\n", minLatfus);
+        printf("Overall Min latency from bins: %13.7f us\n", minLatfus);
         printf("Overall Max latency from bins: %13.7f us\n", maxLatfus);
         
 
