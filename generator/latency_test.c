@@ -2743,7 +2743,7 @@ static void print_overall_stats(void) {
                overall.stddev_latency / tsc_per_us);
 
         printf("\nOverall Avg latency Ex Post: %.7f us\n", 
-               overall.stddev_latency_ex_post / tsc_per_us);
+               overall.avg_latency_ex_post / tsc_per_us);
         printf("Overall StdDev latency Ex Post: %.7f us\n", 
                overall.stddev_latency_ex_post / tsc_per_us);
     } else {
