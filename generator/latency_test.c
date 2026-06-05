@@ -2862,8 +2862,8 @@ static void print_overall_stats(void) {
 
         long double p95_0000_fusAccurate = overall.p95_ns_accurate / 1000.0;
         long double p99_0000_fusAccurate = overall.p99_ns_accurate / 1000.0;
-        printf("Overall 95.0000th percentile latency ACCURATE: %20.13Lf us\n", pp95_0000_fusAccurate);
-        printf("Overall 99.0000th percentile latency ACCURATE: %20.13Lf us\n", pp99_0000_fusAccurate);
+        printf("Overall 95.0000th percentile latency ACCURATE: %20.13Lf us\n", p95_0000_fusAccurate);
+        printf("Overall 99.0000th percentile latency ACCURATE: %20.13Lf us\n", p99_0000_fusAccurate);
        
         printf("Overall 99.9000th percentile latency ACCURATE: %20.13Lf us\n", (overall.p99_9000_ns_accurate / (long double)1000.0) );
         printf("Overall 99.9900th percentile latency ACCURATE: %20.13Lf us\n", (overall.p99_9900_ns_accurate / (long double)1000.0) );
