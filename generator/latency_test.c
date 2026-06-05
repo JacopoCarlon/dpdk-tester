@@ -2621,9 +2621,14 @@ static void print_overall_stats(void) {
     
     if (overall.total_tx > 0) {
         int64_t loss = (int64_t)overall.total_tx - (int64_t)overall.total_rx;
-        if (loss < 0) loss = 0;
+        
+        printf("Total loss of packets: %ld\n", loss);
+        if (loss < 0) {
+            printf("___ weirdly, loss is negative, i.e. we recevide more than we sent ??? ___ \n");
+            //loss = 0;
+        }
         printf("Overall Loss: %.7f%%\n", 
-               100.0 * loss / (double)overall.total_tx);
+                100.0 * loss / (double)overall.total_tx);
     } else {
         printf("Overall Loss: N/A\n");
     }
@@ -2652,9 +2657,8 @@ static void print_overall_stats(void) {
 
         double p95fus = overall.p95_ns / 1000.0;
         double p99fus = overall.p99_ns / 1000.0;
-
-        printf("Overall 95th percentile latency: %ld ns\n", overall.p95_ns);
-        printf("Overall 99th percentile latency: %ld ns\n", overall.p99_ns);
+        // // printf("Overall 95th percentile latency: %ld ns\n", overall.p95_ns);
+        // // printf("Overall 99th percentile latency: %ld ns\n", overall.p99_ns);
 
         printf("Overall 95th percentile latency: %.7f us\n", p95fus);
         printf("Overall 99th percentile latency: %.7f us\n", p99fus);
