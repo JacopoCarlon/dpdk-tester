@@ -1,7 +1,12 @@
 ## Treebeard
 ## RTE_SDK := $(abspath /home/jcarlon/zzz_test/dpdk )
+
 ## Clpex
 RTE_SDK := $(abspath /home/jcarlon/test/dpdk )
+
+## Lace
+## RTE_SDK := $(abspath /home/carlon/test/dpdk )
+
 
 # RTE_SDK := $(abspath /home/carlon/test/dpdk )
 RTE_TARGET ?= build
