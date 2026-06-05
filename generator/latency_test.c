@@ -2416,8 +2416,7 @@ static int lcore_recv(__rte_unused void *arg) {
 
 
 
-static void
-print_histogram_buckets(void)
+static void print_histogram_buckets(void)
 {
     printf("\n---- Latency Histogram Buckets (variable width) ----\n");
     printf("  (%lu ns bins up to %lu ns == %lu us)\n", HIGH_ACCURACY_BIN_SIZE_NS, LAST_HIGH_ACCURACY_LATENCY_NS, LAST_HIGH_ACCURACY_LATENCY_US);
@@ -2451,11 +2450,13 @@ print_histogram_buckets(void)
     }
 
     if (total_in_bins > 0) {
-        double hist_avg = weighted_sum / total_in_bins;
-        hist_avg = hist_avg / 1000.0;
-        printf("\nHistogram-based average: %.7f us (based on %lu packets)\n\n", hist_avg, total_in_bins);
+        // double hist_avg = weighted_sum / total_in_bins;
+        // hist_avg = hist_avg / 1000.0;
+        // printf("\nHistogram-based average: %.7f us (based on %lu packets)\n\n", hist_avg, total_in_bins);
+        return;
     } else {
         printf("\nNo packets in histogram bins.\n");
+        return;
     }
 }
 
