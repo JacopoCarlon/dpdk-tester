@@ -2432,13 +2432,15 @@ print_histogram_buckets(void)
             // get latency of lower part of the bin
             // // double lower_us = bin_lower_edge_us(bin);
             uint64_t lower_ns = bin_lower_edge_ns(bin);
+            uint64_t higher_ns = lower_ns + HIGH_ACCURACY_BIN_SIZE_NS;
+            double flow_us = ((double)lower_ns) / 1000.0;
+            double fhig_us = ((double)lower_ns) / 1000.0;
 
             if (bin == MAX_BINS - 1) {
                 /* Overflow bucket - print as ">= lower" */
-                printf("   >= %13lu    | %lu\n", lower_ns, count);
+                printf("  >= %.7f   | %lu\n", flow_us, count);
             } else {
-                printf("%13lu -  %13lu | %lu\n",
-                       lower_ns, lower_ns + HIGH_ACCURACY_BIN_SIZE_NS, count);
+                printf("%.7f - %.7f | %lu\n", flow_us, fhig_us, count);
             }
 
             total_in_bins += count;
@@ -2448,8 +2450,7 @@ print_histogram_buckets(void)
 
     if (total_in_bins > 0) {
         double hist_avg = weighted_sum / total_in_bins;
-        printf("\nHistogram-based average: %.4f us (based on %lu packets)\n",
-               hist_avg, total_in_bins);
+        printf("\nHistogram-based average: %.7f us (based on %lu packets)\n\n", hist_avg, total_in_bins);
     } else {
         printf("\nNo packets in histogram bins.\n");
     }
