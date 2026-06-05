@@ -1,4 +1,8 @@
-RTE_SDK := $(abspath /home/jcarlon/zzz_test/dpdk )
+## Treebeard
+## RTE_SDK := $(abspath /home/jcarlon/zzz_test/dpdk )
+## Clpex
+RTE_SDK := $(abspath /home/jcarlon/test/dpdk )
+
 # RTE_SDK := $(abspath /home/carlon/test/dpdk )
 RTE_TARGET ?= build
 RTE_ARCH ?= x86_64-native-linuxapp-gcc
