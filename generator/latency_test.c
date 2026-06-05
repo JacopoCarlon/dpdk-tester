@@ -2475,6 +2475,10 @@ static uint64_t calculate_percentile(uint64_t histogram[], uint64_t max_bin,
 }
 
 
+
+
+
+
 static double calculate_avg_latency_ex_post(uint64_t* histogram, uint64_t max_bin){
     uint64_t total_packets = 0;
     uint64_t total_ns_latency_cumulative = 0;
@@ -2482,13 +2486,14 @@ static double calculate_avg_latency_ex_post(uint64_t* histogram, uint64_t max_bi
     for (uint64_t i = 0; i<max_bin; i++){
         total_packets += histogram[i];
         uint64_t ith_latency_ns = i*HIGH_ACCURACY_BIN_SIZE_NS + half_bin_latency_ns;
-        printf("bin i:%lu, latency of bin:%lu, count in this bin:%lu\n", i, ith_latency_ns, histogram[i]);
         total_ns_latency_cumulative += (histogram[i]*ith_latency_ns);
+        printf("bin i:%lu, latency of bin:%lu, count in this bin:%lu, total_ns_latency_cumulative%lu\n", i, ith_latency_ns, histogram[i], total_ns_latency_cumulative);
     }
     if (total_packets == 0){
         return -1.0;
     }
 
+    printf("\n\ntotal_ns_latency_cumulative %lu, total_packets %lu\n\n", total_ns_latency_cumulative, total_packets);
     double avgep = (double)total_ns_latency_cumulative / (double)total_packets;
     return avgep;
 }
