@@ -2242,9 +2242,9 @@ static int lcore_recv(__rte_unused void *arg) {
 
     printf("--- --- --- Starting receive loop on lcore %u --- --- ---\n\n\n", rte_lcore_id());
 
-    printf("selected HIGH_ACCURACY_BIN_SIZE_NS %lu\n", HIGH_ACCURACY_BIN_SIZE_NS);
-    printf("tsc_hz %lu cycles per second.\n",tsc_hz);
-    printf("tsc_per_high_accuracy_bin %lu cycles per bin.\n ",  tsc_per_high_accuracy_bin);
+    printf("lcore_recv: selected HIGH_ACCURACY_BIN_SIZE_NS %lu ns.\n", HIGH_ACCURACY_BIN_SIZE_NS);
+    printf("lcore_recv: tsc_hz %lu cycles per second.\n",tsc_hz);
+    printf("lcore_recv: tsc_per_high_accuracy_bin %lu cycles per bin.\n\n", tsc_per_high_accuracy_bin);
 
     // Add port metadata check
     struct rte_eth_link link;
@@ -2831,7 +2831,7 @@ static void print_overall_stats(void) {
         printf("\n\nNo packets received overall\n\n");
     }
     printf("===============================\n");
-    printf("Test duration: %.13f seconds\n", total_duration_sec);
+    printf("Test duration: %.13Lf seconds\n", total_duration_sec);
     printf("===============================\n");
 }
 
@@ -3455,10 +3455,11 @@ int main(int argc, char **argv) {
     stats.max_latency = 0;
     #endif
 
-
     #ifdef DEBUG
     reset_interval_stats();
     #endif
+
+    stats_enabled = 0;
 
     for (uint16_t port = 0; port < NUM_PORTS; port++) {
         if (port_init(port, mbuf_pool) != 0){
@@ -3506,7 +3507,6 @@ int main(int argc, char **argv) {
     //exit(1);
     unsigned int lcore_id;
     unsigned int worker_count = 0;
-
     
     RTE_LCORE_FOREACH_WORKER(lcore_id) {
         worker_count++;
