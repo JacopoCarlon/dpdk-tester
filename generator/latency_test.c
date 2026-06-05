@@ -2480,9 +2480,9 @@ static long double calculate_avg_latency_ex_post(uint64_t* const histogram, uint
     uint64_t total_ns_latency_cumulative = 0;
     uint64_t half_bin_latency_ns = HIGH_ACCURACY_BIN_SIZE_NS >> 1;
     for (uint64_t i = 0; i<max_bin; i++){
-        total += histogram[i];
+        total_packets += histogram[i];
         uint64_t ith_latency_ns = i*HIGH_ACCURACY_BIN_SIZE_NS + half_bin_latency_ns;
-        total_tsc_latency_cumulative += (histogram[i]*ith_latency_ns);
+        total_ns_latency_cumulative += (histogram[i]*ith_latency_ns);
     }
     if (total_packets == 0){
         return -1.0;
@@ -2495,9 +2495,6 @@ static long double calculate_avg_latency_ex_post(uint64_t* const histogram, uint
 
 //  (stats.histogram, MAX_BINS, overall.avg_latency_ex_post);
 static double calculate_stdev_ex_post(uint64_t* const histogram, uint64_t max_bin){
-    if (avg_latency < 0){
-        return -1.0;
-    }
 
     uint64_t n = 0;
     uint64_t sum = 0;
@@ -2521,7 +2518,7 @@ static double calculate_stdev_ex_post(uint64_t* const histogram, uint64_t max_bi
         sumSq += pkt_bin_i * (lat_bin_i * lat_bin_i);
     }
 
-    long double opposedSumSq = ((long double)(sum * sum)) / ((long double)n) 
+    long double opposedSumSq = ((long double)(sum * sum)) / ((long double)n);
 
     long double diff = sumSq - opposedSumSq;
 
@@ -2532,6 +2529,9 @@ static double calculate_stdev_ex_post(uint64_t* const histogram, uint64_t max_bi
     double variance = (double) varianceLD;
 
     printf("<double_type> variance : %.8f .\n", variance);
+    if (variance < 0){
+        return -1.0;
+    }
 
     double stdev = sqrt(variance);
 
@@ -2658,7 +2658,13 @@ static void calculate_overall_stats(void) {
             overall.stddev_latency = 0;
         }
         overall.avg_latency_ex_post = calculate_avg_latency_ex_post(stats.histogram, MAX_BINS);
+        if (overall.avg_latency_ex_post < 0){
+            printf("somehow avg latency from backets came back negative.. how ???\n");
+        }
         overall.stddev_latency_ex_post = calculate_stdev_ex_post(stats.histogram, MAX_BINS);
+        if (overall.stddev_latency_ex_post < 0){
+            printf("somehow avg latency from backets came back negative.. how ???\n");
+        }
     }
 }
 
