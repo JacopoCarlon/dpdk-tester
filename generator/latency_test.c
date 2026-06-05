@@ -308,7 +308,7 @@ int64_t DEFAULT_WARMUP_US = 50000;
 static struct port_stats {
     uint64_t tx;
     uint64_t rx;
-    uint64_t latency_total_tsc;
+    uint64_t latency_total_tsc;     // this is the sum of the latency perceived by each of the RTT of packets. This is NOT the diff end_experiment - start_experiment, as that would be stupid.
     uint64_t min_latency;
     uint64_t max_latency;
     uint64_t squared_latency_sum;
@@ -337,6 +337,8 @@ struct overall_stats {
     uint64_t max_latency;
     double avg_latency;
     double stddev_latency;
+    long double avg_latency_ex_post;
+    double stddev_latency_ex_post;
     uint64_t p95_ns;
     uint64_t p99_ns;
 } overall;
@@ -2473,8 +2475,68 @@ static uint64_t calculate_percentile(uint64_t histogram[], uint64_t max_bin,
 }
 
 
+static long double calculate_avg_latency_ex_post(uint64_t* const histogram, uint64_t max_bin){
+    uint64_t total_packets = 0;
+    uint64_t total_ns_latency_cumulative = 0;
+    uint64_t half_bin_latency_ns = HIGH_ACCURACY_BIN_SIZE_NS >> 1;
+    for (uint64_t i = 0; i<max_bin; i++){
+        total += histogram[i];
+        uint64_t ith_latency_ns = i*HIGH_ACCURACY_BIN_SIZE_NS + half_bin_latency_ns;
+        total_tsc_latency_cumulative += (histogram[i]*ith_latency_ns);
+    }
+    if (total_packets == 0){
+        return -1.0;
+    }
+
+    long double avgep = (long double)total_ns_latency_cumulative / (long double)total_packets;
+    return avgep;
+}
 
 
+//  (stats.histogram, MAX_BINS, overall.avg_latency_ex_post);
+static double calculate_stdev_ex_post(uint64_t* const histogram, uint64_t max_bin){
+    if (avg_latency < 0){
+        return -1.0;
+    }
+
+    uint64_t n = 0;
+    uint64_t sum = 0;
+    uint64_t sumSq = 0;
+
+
+    uint64_t half_bin_latency_ns = HIGH_ACCURACY_BIN_SIZE_NS >> 1;
+
+    // variance = { SUM_{ (bin_mean_lat - avg_lat)^2 * count_in_bin } }/
+    for (uint64_t i = 0; i<max_bin; i++){
+        // setup variables
+        uint64_t pkt_bin_i = histogram[i];
+        uint64_t lat_bin_i = i * HIGH_ACCURACY_BIN_SIZE_NS + half_bin_latency_ns;
+        
+        // n <- n+1 (increase by chunk)
+        n += pkt_bin_i;
+        
+        // sum <- sum + x (increased by chunk of latencies)
+        sum += pkt_bin_i * lat_bin_i;
+
+        sumSq += pkt_bin_i * (lat_bin_i * lat_bin_i);
+    }
+
+    long double opposedSumSq = ((long double)(sum * sum)) / ((long double)n) 
+
+    long double diff = sumSq - opposedSumSq;
+
+    long double varianceLD = diff / ((long double)(n-1));
+
+    printf("<long double_type> varianceLD : %.8Lf .\n", varianceLD);
+
+    double variance = (double) varianceLD;
+
+    printf("<double_type> variance : %.8f .\n", variance);
+
+    double stdev = sqrt(variance);
+
+    return stdev;
+}
 
 
 
@@ -2595,6 +2657,8 @@ static void calculate_overall_stats(void) {
         } else {
             overall.stddev_latency = 0;
         }
+        overall.avg_latency_ex_post = calculate_avg_latency_ex_post(stats.histogram, MAX_BINS);
+        overall.stddev_latency_ex_post = calculate_stdev_ex_post(stats.histogram, MAX_BINS);
     }
 }
 
@@ -2671,6 +2735,11 @@ static void print_overall_stats(void) {
                overall.avg_latency / tsc_per_us);
         printf("Overall StdDev latency: %.7f us\n", 
                overall.stddev_latency / tsc_per_us);
+
+        printf("\nOverall Avg latency Ex Post: %.7f us\n", 
+               overall.stddev_latency_ex_post / tsc_per_us);
+        printf("Overall StdDev latency Ex Post: %.7f us\n", 
+               overall.stddev_latency_ex_post / tsc_per_us);
     } else {
         printf("No packets received overall\n");
     }
