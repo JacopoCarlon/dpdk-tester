@@ -349,16 +349,18 @@ struct overall_stats {
     uint64_t max_latency_ns;        // values calculated form bins after stop.   
     double avg_latency_ex_post;     // values calculated form bins after stop.      
     double stddev_latency_ex_post;  // values calculated form bins after stop.         
-    uint64_t p95_ns;    // the percentiles are always extracted from the bins.
-    uint64_t p99_ns;    // the percentiles are always extracted from the bins.
-    uint64_t p99_9_ns;    // the percentiles are always extracted from the bins.
-    uint64_t p99_99_ns;    // the percentiles are always extracted from the bins.
-    long double p95_ns_accurate;
-    long double p99_ns_accurate;
-    long double p99_9000_ns_accurate;
-    long double p99_9900_ns_accurate;
-    long double p99_9990_ns_accurate;
-    long double p99_9999_ns_accurate;
+    uint64_t p95_ns;            // the percentiles are always extracted from the bins.
+    uint64_t p99_ns;            // the percentiles are always extracted from the bins.
+    uint64_t p99_9000_ns;       // the percentiles are always extracted from the bins.
+    uint64_t p99_9900_ns;       // the percentiles are always extracted from the bins.
+    uint64_t p99_9990_ns;       // the percentiles are always extracted from the bins.
+    uint64_t p99_9999_ns;       // the percentiles are always extracted from the bins.
+    // long double p95_ns_accurate;
+    // long double p99_ns_accurate;
+    // long double p99_9000_ns_accurate;
+    // long double p99_9900_ns_accurate;
+    // long double p99_9990_ns_accurate;
+    // long double p99_9999_ns_accurate;
 
 } overall;
 
@@ -2353,8 +2355,8 @@ static int lcore_recv(__rte_unused void *arg) {
             if (stats_enabled) {
                 stats.histogram[bin]++; 
                 
-                #ifdef ONLINE
                 stats.latency_total_tsc += latency;
+                #ifdef ONLINE
                 // Update Welford's algorithm for overall standard deviation
                 sample_count++;
                 double delta = latency - sample_mean;
@@ -2485,9 +2487,9 @@ static void print_histogram_buckets(void)
 static uint64_t calculate_percentile(uint64_t histogram[], uint64_t max_bin,
                      uint64_t total, double percentile) {
     if (total == 0) {
-        return 0;
+        return 0.0;
     }
-    uint64_t desired = (uint64_t)ceil(percentile * total);
+    uint64_t desired = (uint64_t)ceil((long double)percentile * (long double)total);
     uint64_t accumulated = 0;
 
     for (uint64_t ith_bin_i = 0; ith_bin_i <= max_bin; ith_bin_i++) {
@@ -2507,7 +2509,7 @@ static uint64_t calculate_percentile(uint64_t histogram[], uint64_t max_bin,
 static long double calculate_percentile_accurate(uint64_t histogram[], uint64_t max_bin,
                      uint64_t total, double percentile) {
     if (total == 0) {
-        return 0;
+        return 0.0;
     }
     uint64_t desired = (uint64_t)ceil((long double)percentile * (long double)total);
     uint64_t accumulated = 0;
@@ -2768,17 +2770,19 @@ static void calculate_overall_stats(void) {
         }
         #endif
 
-        overall.p95_ns = calculate_percentile(stats.histogram, MAX_BINS, overall.total_rx, 0.95);
-        overall.p99_ns = calculate_percentile(stats.histogram, MAX_BINS, overall.total_rx, 0.99);
-        overall.p99_9_ns = calculate_percentile(stats.histogram, MAX_BINS, overall.total_rx, 0.999);
-        overall.p99_99_ns = calculate_percentile(stats.histogram, MAX_BINS, overall.total_rx, 0.9999);
+        overall.p95_ns      = calculate_percentile(stats.histogram, MAX_BINS, overall.total_rx, 0.95);
+        overall.p99_ns      = calculate_percentile(stats.histogram, MAX_BINS, overall.total_rx, 0.99);
+        overall.p99_9000_ns = calculate_percentile(stats.histogram, MAX_BINS, overall.total_rx, 0.999);
+        overall.p99_9900_ns = calculate_percentile(stats.histogram, MAX_BINS, overall.total_rx, 0.9999);
+        overall.p99_9990_ns = calculate_percentile(stats.histogram, MAX_BINS, overall.total_rx, 0.99999);
+        overall.p99_9999_ns = calculate_percentile(stats.histogram, MAX_BINS, overall.total_rx, 0.999999);
         
-        overall.p95_ns_accurate = calculate_percentile_accurate(stats.histogram, MAX_BINS, overall.total_rx, 0.95);
-        overall.p99_ns_accurate = calculate_percentile_accurate(stats.histogram, MAX_BINS, overall.total_rx, 0.99);
-        overall.p99_9000_ns_accurate = calculate_percentile_accurate(stats.histogram, MAX_BINS, overall.total_rx, 0.999);
-        overall.p99_9900_ns_accurate = calculate_percentile_accurate(stats.histogram, MAX_BINS, overall.total_rx, 0.9999);
-        overall.p99_9990_ns_accurate = calculate_percentile_accurate(stats.histogram, MAX_BINS, overall.total_rx, 0.99999);
-        overall.p99_9999_ns_accurate = calculate_percentile_accurate(stats.histogram, MAX_BINS, overall.total_rx, 0.999999);
+        // overall.p95_ns_accurate         = calculate_percentile_accurate(stats.histogram, MAX_BINS, overall.total_rx, 0.95);
+        // overall.p99_ns_accurate         = calculate_percentile_accurate(stats.histogram, MAX_BINS, overall.total_rx, 0.99);
+        // overall.p99_9000_ns_accurate    = calculate_percentile_accurate(stats.histogram, MAX_BINS, overall.total_rx, 0.999);
+        // overall.p99_9900_ns_accurate    = calculate_percentile_accurate(stats.histogram, MAX_BINS, overall.total_rx, 0.9999);
+        // overall.p99_9990_ns_accurate    = calculate_percentile_accurate(stats.histogram, MAX_BINS, overall.total_rx, 0.99999);
+        // overall.p99_9999_ns_accurate    = calculate_percentile_accurate(stats.histogram, MAX_BINS, overall.total_rx, 0.999999);
 
         overall.avg_latency_ex_post = calculate_avg_latency_ex_post(stats.histogram, MAX_BINS);
         printf("avg_latency_ex_post : %10.15f\n", overall.avg_latency_ex_post);
@@ -2854,22 +2858,28 @@ static void print_overall_stats(void) {
 
         // 95th and 99th percentiles always are extracted form bins, so there is no online alternative
 
-        double p95fus = overall.p95_ns / 1000.0;
-        double p99fus = overall.p99_ns / 1000.0;
-        printf("Overall 95th percentile latency: %14.7f us\n", p95fus);
-        printf("Overall 99th percentile latency: %14.7f us\n", p99fus);
+        // double p95fus = overall.p95_ns / 1000.0;
+        // double p99fus = overall.p99_ns / 1000.0;
+        // printf("Overall 95th percentile latency: %14.7f us\n", p95fus);
+        // printf("Overall 99th percentile latency: %14.7f us\n", p99fus);
+
+        printf("Overall 95.0000th percentile latency: %14.7Lf us\n"((long double)overall.p95_ns / (long double)1000.0) );
+        printf("Overall 99.0000th percentile latency: %14.7Lf us\n"((long double)overall.p99_ns / (long double)1000.0) );
+        printf("Overall 99.9000th percentile latency: %14.7Lf us\n"((long double)overall.p99_9000_ns / (long double)1000.0) );
+        printf("Overall 99.9900th percentile latency: %14.7Lf us\n"((long double)overall.p99_9900_ns / (long double)1000.0) );
+        printf("Overall 99.9990th percentile latency: %14.7Lf us\n"((long double)overall.p99_9990_ns / (long double)1000.0) );
+        printf("Overall 99.9999th percentile latency: %14.7Lf us\n"((long double)overall.p99_9999_ns / (long double)1000.0) );
 
 
 
-        long double p95_0000_fusAccurate = overall.p95_ns_accurate / 1000.0;
-        long double p99_0000_fusAccurate = overall.p99_ns_accurate / 1000.0;
-        printf("Overall 95.0000th percentile latency ACCURATE: %20.13Lf us\n", p95_0000_fusAccurate);
-        printf("Overall 99.0000th percentile latency ACCURATE: %20.13Lf us\n", p99_0000_fusAccurate);
-       
-        printf("Overall 99.9000th percentile latency ACCURATE: %20.13Lf us\n", (overall.p99_9000_ns_accurate / (long double)1000.0) );
-        printf("Overall 99.9900th percentile latency ACCURATE: %20.13Lf us\n", (overall.p99_9900_ns_accurate / (long double)1000.0) );
-        printf("Overall 99.9990th percentile latency ACCURATE: %20.13Lf us\n", (overall.p99_9990_ns_accurate / (long double)1000.0) );
-        printf("Overall 99.9999th percentile latency ACCURATE: %20.13Lf us\n", (overall.p99_9999_ns_accurate / (long double)1000.0) );
+        // // // long double p95_0000_fusAccurate = overall.p95_ns_accurate / 1000.0;
+        // // // long double p99_0000_fusAccurate = overall.p99_ns_accurate / 1000.0;
+        // // // printf("Overall 95.0000th percentile latency ACCURATE: %20.13Lf us\n", p95_0000_fusAccurate);
+        // // // printf("Overall 99.0000th percentile latency ACCURATE: %20.13Lf us\n", p99_0000_fusAccurate);
+        // // // printf("Overall 99.9000th percentile latency ACCURATE: %20.13Lf us\n", (overall.p99_9000_ns_accurate / (long double)1000.0) );
+        // // // printf("Overall 99.9900th percentile latency ACCURATE: %20.13Lf us\n", (overall.p99_9900_ns_accurate / (long double)1000.0) );
+        // // // printf("Overall 99.9990th percentile latency ACCURATE: %20.13Lf us\n", (overall.p99_9990_ns_accurate / (long double)1000.0) );
+        // // // printf("Overall 99.9999th percentile latency ACCURATE: %20.13Lf us\n", (overall.p99_9999_ns_accurate / (long double)1000.0) );
         
         #ifdef ONLINE
         printf(">>>Overall Min latency Online: %16.7f us\n", (double)overall.onlineMin_tsc / tsc_per_us);
