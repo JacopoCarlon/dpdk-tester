@@ -2863,12 +2863,12 @@ static void print_overall_stats(void) {
         // printf("Overall 95th percentile latency: %14.7f us\n", p95fus);
         // printf("Overall 99th percentile latency: %14.7f us\n", p99fus);
 
-        printf("Overall 95.0000th percentile latency: %14.7Lf us\n"((long double)overall.p95_ns / (long double)1000.0) );
-        printf("Overall 99.0000th percentile latency: %14.7Lf us\n"((long double)overall.p99_ns / (long double)1000.0) );
-        printf("Overall 99.9000th percentile latency: %14.7Lf us\n"((long double)overall.p99_9000_ns / (long double)1000.0) );
-        printf("Overall 99.9900th percentile latency: %14.7Lf us\n"((long double)overall.p99_9900_ns / (long double)1000.0) );
-        printf("Overall 99.9990th percentile latency: %14.7Lf us\n"((long double)overall.p99_9990_ns / (long double)1000.0) );
-        printf("Overall 99.9999th percentile latency: %14.7Lf us\n"((long double)overall.p99_9999_ns / (long double)1000.0) );
+        printf("Overall 95.0000th percentile latency: %14.7Lf us\n", ((long double)overall.p95_ns / (long double)1000.0) );
+        printf("Overall 99.0000th percentile latency: %14.7Lf us\n", ((long double)overall.p99_ns / (long double)1000.0) );
+        printf("Overall 99.9000th percentile latency: %14.7Lf us\n", ((long double)overall.p99_9000_ns / (long double)1000.0) );
+        printf("Overall 99.9900th percentile latency: %14.7Lf us\n", ((long double)overall.p99_9900_ns / (long double)1000.0) );
+        printf("Overall 99.9990th percentile latency: %14.7Lf us\n", ((long double)overall.p99_9990_ns / (long double)1000.0) );
+        printf("Overall 99.9999th percentile latency: %14.7Lf us\n", ((long double)overall.p99_9999_ns / (long double)1000.0) );
 
 
 
