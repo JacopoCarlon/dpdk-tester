@@ -2853,25 +2853,9 @@ static void print_overall_stats(void) {
     if (overall.total_rx > 0) {
         double tsc_per_us = tsc_hz / 1e6;      
         
-        // printf("Overall 95th percentile latency: %ld ns\n", overall.p95_ns);
-        // printf("Overall 99th percentile latency: %ld ns\n", overall.p99_ns);
-
-        // 95th and 99th percentiles always are extracted form bins, so there is no online alternative
-
-        // double p95fus = overall.p95_ns / 1000.0;
-        // double p99fus = overall.p99_ns / 1000.0;
-        // printf("Overall 95th percentile latency: %14.7f us\n", p95fus);
-        // printf("Overall 99th percentile latency: %14.7f us\n", p99fus);
-
-        printf("Overall 95.0000th percentile latency: %14.7Lf us\n", ((long double)overall.p95_ns / (long double)1000.0) );
-        printf("Overall 99.0000th percentile latency: %14.7Lf us\n", ((long double)overall.p99_ns / (long double)1000.0) );
-        printf("Overall 99.9000th percentile latency: %14.7Lf us\n", ((long double)overall.p99_9000_ns / (long double)1000.0) );
-        printf("Overall 99.9900th percentile latency: %14.7Lf us\n", ((long double)overall.p99_9900_ns / (long double)1000.0) );
-        printf("Overall 99.9990th percentile latency: %14.7Lf us\n", ((long double)overall.p99_9990_ns / (long double)1000.0) );
-        printf("Overall 99.9999th percentile latency: %14.7Lf us\n", ((long double)overall.p99_9999_ns / (long double)1000.0) );
-
-
-
+        
+        
+        
         // // // long double p95_0000_fusAccurate = overall.p95_ns_accurate / 1000.0;
         // // // long double p99_0000_fusAccurate = overall.p99_ns_accurate / 1000.0;
         // // // printf("Overall 95.0000th percentile latency ACCURATE: %20.13Lf us\n", p95_0000_fusAccurate);
@@ -2884,21 +2868,26 @@ static void print_overall_stats(void) {
         #ifdef ONLINE
         printf(">>>Overall Min latency Online: %16.7f us\n", (double)overall.onlineMin_tsc / tsc_per_us);
         printf(">>>Overall Max latency Online: %16.7f us\n", (double)overall.onlineMax_tsc / tsc_per_us);
-        #endif       
-        double minLatfus = (double)overall.min_latency_ns / 1000.0;
-        double maxLatfus = (double)overall.max_latency_ns / 1000.0;
-        printf("Overall Min latency from bins: %16.7f us\n", minLatfus);
-        printf("Overall Max latency from bins: %16.7f us\n", maxLatfus);
-        
-
-        #ifdef ONLINE
-        printf(">>>Overall Avg latency: %16.7f us\n", overall.avg_latency / tsc_per_us);
-        printf(">>>Overall StdDev latency: %13.7f us\n", overall.stddev_latency / tsc_per_us);
         #endif
-        double avglep = overall.avg_latency_ex_post / 1000.0;
-        double avgstdep = overall.stddev_latency_ex_post / 1000.0; 
-        printf("Overall Avg latency from bins: %16.7f us\n", avglep );
-        printf("Overall StdDev latency from bins: %13.7f us\n", avgstdep);
+
+        printf("Overall Min latency from bins: %21.7f us\n", (double)overall.min_latency_ns / 1000.0);
+        printf("Overall Max latency from bins: %21.7f us\n", (double)overall.max_latency_ns / 1000.0);
+        
+        
+        #ifdef ONLINE
+        printf(">>>Overall StdDev latency: %13.7f us\n", overall.stddev_latency / tsc_per_us);
+        printf(">>>Overall Avg latency: %16.7f us\n", overall.avg_latency / tsc_per_us);
+        #endif
+
+
+        printf("Overall StdDev  latency from bins   : %14.9Lf us\n", ((long double)overall.stddev_latency_ex_post / (long double)1000.0) );
+        printf("Overall Average latency from bins   : %14.9Lf us\n", ((long double)overall.avg_latency_ex_post / (long double)1000.0) );
+        printf("Overall 95.0000th percentile latency: %14.9Lf us\n", ((long double)overall.p95_ns / (long double)1000.0) );
+        printf("Overall 99.0000th percentile latency: %14.9Lf us\n", ((long double)overall.p99_ns / (long double)1000.0) );
+        printf("Overall 99.9000th percentile latency: %14.9Lf us\n", ((long double)overall.p99_9000_ns / (long double)1000.0) );
+        printf("Overall 99.9900th percentile latency: %14.9Lf us\n", ((long double)overall.p99_9900_ns / (long double)1000.0) );
+        printf("Overall 99.9990th percentile latency: %14.9Lf us\n", ((long double)overall.p99_9990_ns / (long double)1000.0) );
+        printf("Overall 99.9999th percentile latency: %14.9Lf us\n", ((long double)overall.p99_9999_ns / (long double)1000.0) );
 
     } else {
         printf("\n\nNo packets received overall\n\n");
