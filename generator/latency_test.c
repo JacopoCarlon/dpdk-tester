@@ -109,6 +109,8 @@ If cache_size is non-zero, the rte_mempool library will try
 // MAX_BINS is the number of allocated bins (max number of binning, not the value of the last.)
 #define MAX_BINS (LAST_HIGH_ACCURACY_LATENCY_NS / HIGH_ACCURACY_BIN_SIZE_NS)
 
+#define LAST_BIN_POS (MAX_BINS - 1)
+
 // Ethernet frame overhead calculations
 
 #define PHYSICAL_OVERHEAD 24  // 4(FCS) + 8(preamble) + 12(IFG)
@@ -495,7 +497,7 @@ static void setup_payload(char *payload) {
 // // //    {
 // // //        // - until 50us, collect latency every 100ns
 // // //        // - afterwards, every 1 us
-// // //        // - if above MAX_BINS, clamp to MAX_BINS
+// // //        // - if above MAX_BINS, clamp to LAST_BIN_POS
 // // //    
 // // //        if ( latency_ns < LAST_HIGH_ACCURACY_LATENCY_NS) {
 // // //            uint64_t bin = latency_ns/ HIGH_ACCURACY_BIN_SIZE_NS;
@@ -506,7 +508,7 @@ static void setup_payload(char *payload) {
 // // //        } else {
 // // //            uint32_t bin = NUM_HIGH_ACCURACY_BINS + ((latency_ns - LAST_HIGH_ACCURACY_LATENCY_NS)/ LOW_ACCURACY_BIN_SIZE_NS);
 // // //            if (bin >= MAX_BINS){
-// // //                bin = MAX_BINS - 1;
+// // //                bin = LAST_BIN_POS;
 // // //            } 
 // // //            return bin;
 // // //        }
@@ -2340,7 +2342,7 @@ static int lcore_recv(__rte_unused void *arg) {
             
             uint64_t bin = latency / tsc_per_high_accuracy_bin;
             if (bin > MAX_BINS){
-                bin = MAX_BINS;
+                bin = LAST_BIN_POS;
             }
 
             #ifdef HIGH_LAT_VERBOSE
@@ -2447,7 +2449,7 @@ static void print_histogram_buckets(void)
             double flow_us = ((double)lower_ns) / 1000.0;
             double fhig_us = ((double)lower_ns) / 1000.0;
 
-            if (bin == MAX_BINS - 1) {
+            if (bin == LAST_BIN_POS) {
                 /* Overflow bucket - print as ">= lower" */
                 printf("  >= %.7f   | %lu\n", flow_us, count);
             } else {
@@ -2544,7 +2546,7 @@ static double calculate_avg_latency_ex_post(uint64_t* histogram, uint64_t max_bi
     uint64_t total_packets = 0;
     uint64_t total_ns_latency_cumulative = 0;
     uint64_t half_bin_latency_ns = HIGH_ACCURACY_BIN_SIZE_NS >> 1;
-    for (uint64_t i = 0; i<max_bin; i++){
+    for (uint64_t i = 0; i<=max_bin; i++){
         total_packets += histogram[i];
         uint64_t ith_latency_ns = i*HIGH_ACCURACY_BIN_SIZE_NS + half_bin_latency_ns;
         total_ns_latency_cumulative += (histogram[i]*ith_latency_ns);
@@ -2571,7 +2573,7 @@ static double calculate_stdev_ex_post(uint64_t* const histogram, uint64_t max_bi
     uint64_t half_bin_latency_ns = HIGH_ACCURACY_BIN_SIZE_NS >> 1;
 
     // variance = { SUM_{ (bin_mean_lat - avg_lat)^2 * count_in_bin } }/
-    for (uint64_t i = 0; i<max_bin; i++){
+    for (uint64_t i = 0; i<=max_bin; i++){
         // setup variables
         uint64_t pkt_bin_i = histogram[i];
         uint64_t lat_bin_i = i * HIGH_ACCURACY_BIN_SIZE_NS + half_bin_latency_ns;
@@ -2770,27 +2772,27 @@ static void calculate_overall_stats(void) {
         }
         #endif
 
-        overall.p95_ns      = calculate_percentile(stats.histogram, MAX_BINS, overall.total_rx, 0.95);
-        overall.p99_ns      = calculate_percentile(stats.histogram, MAX_BINS, overall.total_rx, 0.99);
-        overall.p99_9000_ns = calculate_percentile(stats.histogram, MAX_BINS, overall.total_rx, 0.999);
-        overall.p99_9900_ns = calculate_percentile(stats.histogram, MAX_BINS, overall.total_rx, 0.9999);
-        overall.p99_9990_ns = calculate_percentile(stats.histogram, MAX_BINS, overall.total_rx, 0.99999);
-        overall.p99_9999_ns = calculate_percentile(stats.histogram, MAX_BINS, overall.total_rx, 0.999999);
+        overall.p95_ns      = calculate_percentile(stats.histogram, LAST_BIN_POS, overall.total_rx, 0.95);
+        overall.p99_ns      = calculate_percentile(stats.histogram, LAST_BIN_POS, overall.total_rx, 0.99);
+        overall.p99_9000_ns = calculate_percentile(stats.histogram, LAST_BIN_POS, overall.total_rx, 0.999);
+        overall.p99_9900_ns = calculate_percentile(stats.histogram, LAST_BIN_POS, overall.total_rx, 0.9999);
+        overall.p99_9990_ns = calculate_percentile(stats.histogram, LAST_BIN_POS, overall.total_rx, 0.99999);
+        overall.p99_9999_ns = calculate_percentile(stats.histogram, LAST_BIN_POS, overall.total_rx, 0.999999);
         
-        // overall.p95_ns_accurate         = calculate_percentile_accurate(stats.histogram, MAX_BINS, overall.total_rx, 0.95);
-        // overall.p99_ns_accurate         = calculate_percentile_accurate(stats.histogram, MAX_BINS, overall.total_rx, 0.99);
-        // overall.p99_9000_ns_accurate    = calculate_percentile_accurate(stats.histogram, MAX_BINS, overall.total_rx, 0.999);
-        // overall.p99_9900_ns_accurate    = calculate_percentile_accurate(stats.histogram, MAX_BINS, overall.total_rx, 0.9999);
-        // overall.p99_9990_ns_accurate    = calculate_percentile_accurate(stats.histogram, MAX_BINS, overall.total_rx, 0.99999);
-        // overall.p99_9999_ns_accurate    = calculate_percentile_accurate(stats.histogram, MAX_BINS, overall.total_rx, 0.999999);
+        // overall.p95_ns_accurate         = calculate_percentile_accurate(stats.histogram, LAST_BIN_POS, overall.total_rx, 0.95);
+        // overall.p99_ns_accurate         = calculate_percentile_accurate(stats.histogram, LAST_BIN_POS, overall.total_rx, 0.99);
+        // overall.p99_9000_ns_accurate    = calculate_percentile_accurate(stats.histogram, LAST_BIN_POS, overall.total_rx, 0.999);
+        // overall.p99_9900_ns_accurate    = calculate_percentile_accurate(stats.histogram, LAST_BIN_POS, overall.total_rx, 0.9999);
+        // overall.p99_9990_ns_accurate    = calculate_percentile_accurate(stats.histogram, LAST_BIN_POS, overall.total_rx, 0.99999);
+        // overall.p99_9999_ns_accurate    = calculate_percentile_accurate(stats.histogram, LAST_BIN_POS, overall.total_rx, 0.999999);
 
-        overall.avg_latency_ex_post = calculate_avg_latency_ex_post(stats.histogram, MAX_BINS);
+        overall.avg_latency_ex_post = calculate_avg_latency_ex_post(stats.histogram, LAST_BIN_POS);
         printf("avg_latency_ex_post : %10.15f\n", overall.avg_latency_ex_post);
         if (overall.avg_latency_ex_post < 0){
             printf("somehow avg latency from backets came back negative.. how ???\n");
         }
         
-        overall.stddev_latency_ex_post = calculate_stdev_ex_post(stats.histogram, MAX_BINS);
+        overall.stddev_latency_ex_post = calculate_stdev_ex_post(stats.histogram, LAST_BIN_POS);
         printf("stddev_latency_ex_post : %10.15f\n", overall.stddev_latency_ex_post);
         if (overall.stddev_latency_ex_post < 0){
             printf("somehow avg latency from backets came back negative.. how ???\n");
