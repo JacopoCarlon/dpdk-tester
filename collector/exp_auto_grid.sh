@@ -252,14 +252,16 @@ start_l3fwd() {
 
 stop_l3fwd() {
     echo "[$(date +%T)] Stopping l3fwd-power"
-    sudo kill -TERM $L3FWD_PID 2>/dev/null
-    sleep 3
-    sudo pkill -TERM -f "dpdk-l3fwd-power" 2>/dev/null || true
-    sleep 3   
-    sudo killall -9 dpdk-l3fwd-power 2>/dev/null || true
-    sleep 3 
-    sudo rm -rf /var/run/dpdk/* /dev/shm/dpdk* 2>/dev/null || true
-    sleep 3
+    ### !!! DPDK wants Ctrl C which is sigint not sigterm.
+    sudo kill -INT $L3FWD_PID 2>/dev/null
+    sleep 10
+    sudo pkill -INT -f "dpdk-l3fwd-power" 2>/dev/null || true
+    sleep 5
+    ## these heavy kills shall be executed before start.
+    ## sudo killall -9 dpdk-l3fwd-power 2>/dev/null || true
+    ## sleep 3 
+    ## sudo rm -rf /var/run/dpdk/* /dev/shm/dpdk* 2>/dev/null || true
+    ## sleep 3
 }
 
 
@@ -273,19 +275,19 @@ rename_l3fwd_logfile(){
         pure)
             src_log="$RESULTS_DIR/l3fwd_pure.log" ;;
         interrupt-only)
-            src_log="$RESULTS_DIR/l3fwd_pure.log" ;;
+            src_log="$RESULTS_DIR/l3fwd_intonly.log" ;;
         hybrid)
-            src_log="$RESULTS_DIR/l3fwd_pure.log" ;;
+            src_log="$RESULTS_DIR/l3fwd_hybrid.log" ;;
         pause)
-            src_log="$RESULTS_DIR/l3fwd_pure.log" ;;
+            src_log="$RESULTS_DIR/l3fwd_pause.log" ;;
         scale)
-            src_log="$RESULTS_DIR/l3fwd_pure.log" ;;
+            src_log="$RESULTS_DIR/l3fwd_scale.log" ;;
         *)        
             src_log="$RESULTS_DIR/l3fwd.log" ;;
     esac
 
     if [ ! -f "$src_log" ]; then
-        echo "WARNING: forwarder log not found: $src_log"
+        echo "WARNING: forwarder log (of type $type) not found when looking for : $src_log ."
         return
     fi
 
