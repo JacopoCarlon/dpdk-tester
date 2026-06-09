@@ -53,7 +53,7 @@ TRAFFICS=(
     ### cplex3: sudo ./latency_test -l 2,4,6 -- -B 32 -s 300 -p multipleExpLogn -- 300  2.0  14.45  0.35 100 5000000 9800000000
     '-p multipleExpLogn -s 256 -b 32 -A "350 2.0 14.45 0.35 100 5000000 9800000000" -n expLogn'
 
-    '-p multipleExpLogn -s 256 -b 32 -A "350 2.0 14.45 0.35 100 5000000 5000000000" -n expLogn'
+    '-p multipleExpLogn -s 256 -b 32 -A "250 2.0 14.45 0.35 100 5000000 5000000000" -n expLogn'
     
     ### lace: sudo ./latency_test -l 2,4,6 -- -B 256 -s 1024 -p multipleExpLogn -- 500  4.0  14.45  0.35 100 5000000 20000000000
     ### '-p multipleExpLogn -s 256 -b 32 -A "500 4.0 14.45 0.35 100 5000000 20000000000" -n expLogn'
@@ -67,7 +67,7 @@ TRAFFICS=(
     # --- --- --- --- Web --- --- --- --- 
     ### cplex3 : sudo ./latency_test -l 2,4,6 -- -B 32 -s 300 -p web 800000 8.37 1.37 100 2000000 6.17 2.36 50 2000000 1.1 2.0 55.0 7.69 0.033 10000000000
     '-p web -s 256 -b 32 -A "800000 8.37 1.37 100 2000000 6.17 2.36 50 2000000 1.1 2.0 55.0 7.69 0.033 10000000000" -n web'
-    '-p web -s 256 -b 32 -A "80000 8.37 1.37 100 2000000 6.17 2.36 50 2000000 1.1 2.0 55.0 7.69 0.033 10000000000" -n web'
+    '-p web -s 256 -b 32 -A "80000 8.37 1.37 100 2000000 6.17 2.36 50 2000000 1.1 2.0 55.0 7.69 0.033 5000000000" -n web'
 
     ### lace: sudo ./latency_test -l 2,4,6 -- -B 256 -s 1024 -p web 2500000 8.37 1.37 100 2000000 6.17 2.36 50 2000000 1.1 2.0 55.0 7.69 0.033 30000000000
     ### '-p web -s 256 -b 32 -A "2500000 8.37 1.37 100 2000000 6.17 2.36 50 2000000 1.1 2.0 55.0 7.69 0.033 30000000000" -n web'
@@ -182,7 +182,7 @@ TARGET_FREQUENCIES=(1200000 1400000 1600000 1800000 2000000 2200000 2400000)
 TARGET_FREQUENCIES_SMOL=(1200000)
 
 
-for target_freq in "${TARGET_FREQUENCIES_SMOL[@]}"; do
+for target_freq in "${TARGET_FREQUENCIES[@]}"; do
     sudo $FREQ_SCRIPT --enable-cstates $target_freq $target_freq
 
     echo "=== === === === === === ==="
@@ -192,7 +192,7 @@ for target_freq in "${TARGET_FREQUENCIES_SMOL[@]}"; do
     echo "=== === === === === === ==="
     echo "Starting iterating on userspace governor with frequency $target_freq"
 
-    for traffic in "${TRAFFICS_SMOL[@]}"; do
+    for traffic in "${TRAFFICS[@]}"; do
         traffic_name=""
         if [[ "$traffic" =~ -n[[:space:]]+([^[:space:]]+) ]]; then
             traffic_name="${BASH_REMATCH[1]}"
@@ -209,7 +209,7 @@ for target_freq in "${TARGET_FREQUENCIES_SMOL[@]}"; do
         echo "--- --- --- --- --- --- --- --- ---"
         echo "Starting iterating on traffic $traffic"
 
-        for exp in "${EXPERIMENTS_SMOL[@]}"; do
+        for exp in "${EXPERIMENTS[@]}"; do
             read -r type extra_flags <<< "$exp"
 
             # suffix includes both traffic name and frequency
