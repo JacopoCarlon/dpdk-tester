@@ -2937,8 +2937,7 @@ static void print_overall_stats(void) {
         uint64_t tsc_hz = rte_get_tsc_hz(); // this returns like 2.500.000.000 if frequency is 2.5GHz
 
         // how many tsc per bin = <<how many tsc per second>> / <<how many bins per second>>
-        long double tsc_per_high_accuracy_bin = (long double)tsc_hz / (long double)HIGH_ACCURACY_BINS_IN_A_SECOND; // <2500M / 10M = 250>. 
-        long double maxOnlineLatency_ns = (long double)overall.online_max_tsc / (long double)tsc_per_high_accuracy_bin;
+        long double maxOnlineLatency_ns = (long double)overall.online_max_tsc * ( (long double)_NS_IN_A_SECOND / (long double)tsc_hz ) ;
 
         printf("Overall Min latency from bins:        %16.9Lf us\n", ((long double)overall.min_latency_ns   / (long double)1000.0) );
         printf("Overall Max latency from bins:        %16.9Lf us\n", ((long double)overall.max_latency_ns   / (long double)1000.0) );
@@ -3725,6 +3724,8 @@ int main(int argc, char **argv) {
     printf("All worker threads have completed, will now print overall stats\n");
 
     // Calculate and print overall statistics
+
+    usleep(300);
     calculate_overall_stats();
     print_overall_stats();
 
