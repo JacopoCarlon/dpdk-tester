@@ -9,12 +9,14 @@
 #include <rte_ip.h>
 #include <rte_random.h>
 #include <rte_pie.h>
+#include <rte_malloc.h>
+#include <rte_common.h>
+#include <rte_stdatomic.h>
 #include <stdint.h>
 #include <signal.h>
 #include <unistd.h>
 #include <getopt.h>
 #include <math.h>
-#include <rte_malloc.h>
 #include <stdbool.h>
 
 #define NUM_PORTS 2
@@ -349,6 +351,7 @@ struct overall_stats {
     #endif
     uint64_t min_latency_ns;        // values calculated form bins after stop.   
     uint64_t max_latency_ns;        // values calculated form bins after stop.   
+    uint64_t online_max_tsc;
     double avg_latency_ex_post;     // values calculated form bins after stop.      
     double stddev_latency_ex_post;  // values calculated form bins after stop.         
     uint64_t p95_ns;            // the percentiles are always extracted from the bins.
@@ -715,7 +718,17 @@ static int lcore_send_multiple_exp_logn(__rte_unused void *arg) {
         
         // ---------- Main send loop ----------
         uint64_t now = 0;
+
+        bool local_stats_enabled = false;
+
         while (!force_quit) {
+
+            if ( unlikely(!local_stats_enabled) ){
+                if (stats_enabled){
+                    local_stats_enabled = true;
+                }
+            }
+
             now = rte_rdtsc_precise();
             
             /* ---- Step 1: Process due events (if any) ---- */
@@ -847,7 +860,7 @@ static int lcore_send_multiple_exp_logn(__rte_unused void *arg) {
                 }
                 
                 /* Update statistics */
-                if (stats_enabled) {
+                if (local_stats_enabled) {
                     stats.tx += sent;
                     uint64_t wire_bytes = WIRE_SIZE(PACKET_SIZE) * sent;
                     total_wire_bytes += wire_bytes;
@@ -882,25 +895,14 @@ static int lcore_send_multiple_exp_logn(__rte_unused void *arg) {
             }
         }
         
-        /* ---- Step 3: If nothing to do, pause briefly until next event ---- */
-        //  if (total_pending_packets == 0 && heap_size > 0 && !force_quit) {
-            //      int64_t wait = users[heap[0]].next_event_time - rte_rdtsc_precise();
-            //      if (wait > 0) {
-                //          uint64_t wait_until = rte_rdtsc_precise() + wait;
-                //          while (rte_rdtsc_precise() < wait_until && !force_quit) {
-                    //              rte_pause();
-                    //          }
-                    //          if (force_quit) break;
-                    //      }
-                    //  }
-                    if (force_quit) {
-                        break;
-                    }
-                }
-                
-                printf("\nI am mel_lcore_send (multipleExpLogn) and i got mel_send_empty_queues = %lu\n\n", mel_send_empty_queues);
-                return 0;
-            }
+        if (force_quit) {
+            break;
+        }
+    }
+    
+    printf("\nI am mel_lcore_send (multipleExpLogn) and i got mel_send_empty_queues = %lu\n\n", mel_send_empty_queues);
+    return 0;
+}
             
             
             
@@ -1051,8 +1053,18 @@ static int lcore_send_web_traffic(__rte_unused void *arg) {
         // end of one-time initialization 
     }
 
-    uint64_t now;
+    uint64_t now = 0;
+
+    bool local_stats_enabled = false;
+
     while (!force_quit) {
+
+        if ( unlikely(!local_stats_enabled) ){
+            if (stats_enabled){
+                local_stats_enabled = true;
+            }
+        }
+
         now = rte_rdtsc_precise();
 
         // ----- Process due waiting events -----
@@ -1222,7 +1234,7 @@ static int lcore_send_web_traffic(__rte_unused void *arg) {
                 }
             }
 
-            if (stats_enabled) {
+            if (local_stats_enabled) {
                 stats.tx += sent;
                 uint64_t wire_bytes = WIRE_SIZE(PACKET_SIZE) * sent;
                 total_wire_bytes += wire_bytes;
@@ -1402,14 +1414,22 @@ static int lcore_send_game_traffic(__rte_unused void *arg) {
                "  UL: initial=[%.3f,%.3f]s, arrival_type=%s, inter-arrival=(%.3f,%.3f), size=(%.1f,%.1f)\n"
                "  DL: initial=[%.3f,%.3f]s, inter-arrival=(%.3f,%.3f), size=(%.1f,%.1f)\n",
                num_users, (direction == 0 ? "UL" : "DL"), target_bps,
-               ul_initial_a, ul_initial_b, ul_arrival_type ? "Gumbel" : "Deterministic",
+               ul_initial_a, ul_initial_b, (ul_arrival_type ? "Gumbel" : "Deterministic"),
                ul_arrival_a, ul_arrival_b, ul_size_a, ul_size_b,
                dl_initial_a, dl_initial_b, dl_arrival_a, dl_arrival_b, dl_size_a, dl_size_b);
     }
 
-    uint64_t now;
+    uint64_t now = 0;
+
+    bool local_stats_enabled = false;
+
     while (!force_quit) {
-        now = rte_rdtsc_precise();
+
+        if ( unlikely(!local_stats_enabled) ){
+            if (stats_enabled){
+                local_stats_enabled = true;
+            }
+        }
 
         // ----- Process due events: users whose next_send_time <= now -----
         while (heap_size > 0 && users[heap[0]].next_send_time <= now) {
@@ -1593,7 +1613,7 @@ static int lcore_send_game_traffic(__rte_unused void *arg) {
 
             // Update statistics - note that we now have variable packet sizes,
             // so we need to account for the actual wire bytes.
-            if (stats_enabled) {
+            if (local_stats_enabled) {
                 stats.tx += sent;
                 uint64_t wire_bytes = 0;
                 for (int i = 0; i < sent; i++) {
@@ -1834,7 +1854,16 @@ static int lcore_send(__rte_unused void *arg) {
         return lcore_send_game_traffic(arg);
     }
 
+    bool local_stats_enabled = false;
+
     while (!force_quit) {
+
+        if ( unlikely(!local_stats_enabled) ){
+            if (stats_enabled){
+                local_stats_enabled = true;
+            }
+        }
+
         // Check packet limit
         if (total_packets > 0 && stats.tx >= total_packets) {
             force_quit = true;
@@ -2147,7 +2176,7 @@ static int lcore_send(__rte_unused void *arg) {
         // FIX: Transmit immediately after construction
         uint16_t sent = rte_eth_tx_burst(tx_port, 0, tx_bufs, burst_to_send);
  
-        if (stats_enabled) {
+        if (local_stats_enabled) {
             stats.tx += sent;
             
             uint64_t wire_bytes = WIRE_SIZE(PACKET_SIZE) * sent;
@@ -2250,8 +2279,17 @@ static int lcore_recv(__rte_unused void *arg) {
     uint64_t tsc_hz = rte_get_tsc_hz(); // this returns like 2.500.000.000 if frequency is 2.5GHz
 
     // how many tsc per bin = <<how many tsc per second>> / <<how many bins per second>>
-    uint64_t tsc_per_high_accuracy_bin = tsc_hz / HIGH_ACCURACY_BINS_IN_A_SECOND; // <2500M / 10M = 250>. 
- 
+    // in this case passing through float is kinda useless, but let's do it anyways since we are out of hot path.
+    long double tsc_per_high_accuracy_bin_ld = (long double)tsc_hz / (long double)HIGH_ACCURACY_BINS_IN_A_SECOND ;  // <2500M / 10M = 250.0>. 
+    long double inverse_tsc_per_high_accuracy_bin_ld = (long double)HIGH_ACCURACY_BINS_IN_A_SECOND / (long double)tsc_hz ;      // <10M / 2500M = 0.004>. 
+    uint64_t tsc_per_high_accuracy_bin = (uint64_t) tsc_per_high_accuracy_bin_ld;
+
+    // uint64_t upper_max_binning_latency_tsc = (MAX_BINS+1) * tsc_per_high_accuracy_bin;
+    // 1. using long double since out of hot path, nice :-)
+    // 2. first divide then multiply so we avoid risk of overflows, at cost of accuracy in lower flots.
+    long double upper_max_binning_latency_tsc_ld = (long double)(MAX_BINS) * tsc_per_high_accuracy_bin_ld ;
+    uint64_t upper_max_binning_latency_tsc = (uint64_t)upper_max_binning_latency_tsc_ld;
+
     struct rte_mbuf *rx_bufs[MAX_BURST_SIZE];
 
     printf("--- --- --- Starting receive loop on lcore %u --- --- ---\n\n\n", rte_lcore_id());
@@ -2275,7 +2313,17 @@ static int lcore_recv(__rte_unused void *arg) {
 
     uint64_t recv_empty_queues = 0;
 
+    bool local_stats_enabled = false;
+
     while (!force_quit) {
+
+        if ( unlikely(!local_stats_enabled) ){
+            if (stats_enabled){
+                local_stats_enabled = true;
+            }
+        }
+
+
         // Receive burst of packets
         uint16_t nb_rx = rte_eth_rx_burst(rx_port, 0, rx_bufs, traffic_config.burst_size);
         if (nb_rx == 0) {
@@ -2286,7 +2334,7 @@ static int lcore_recv(__rte_unused void *arg) {
         }
         uint64_t recv_ts = rte_rdtsc_precise();
 
-        if (stats_enabled) {
+        if (local_stats_enabled) {
             stats.rx += nb_rx;
             #ifdef DEBUG
             stats.interval_rx += nb_rx;
@@ -2336,25 +2384,41 @@ static int lcore_recv(__rte_unused void *arg) {
                 continue;
             }
             // latency here in tsc. Time Stamp Counter
-            uint64_t latency = recv_ts - sent_ts;
-                        
-            // uint64_t bin = latency_ns_to_bin(latency_ns);
             
-            uint64_t bin = latency / tsc_per_high_accuracy_bin;
-            if (bin > MAX_BINS){
-                bin = LAST_BIN_POS;
-            }
+            // it was : if (stats_enabled)
+            if (local_stats_enabled) {
+                
+                uint64_t latency = recv_ts - sent_ts;
+                
+                uint64_t bin = LAST_BIN_POS + 1;
+                if (latency < upper_max_binning_latency_tsc){
+                    // no point in calculating bin if latency would be outside of it, no?
+                    // also, we could (uint64_t )(long double ... / long double ...)
+                    // but i am not really a fan of long double division in hot path.
+                    // // // // bin = (uint64_t) ( (long double) latency * inverse_tsc_per_high_accuracy_bin_ld);
+                    bin = latency / tsc_per_high_accuracy_bin;  
+                }
+                
+                if (bin > LAST_BIN_POS){
+                    // i.e. MAX_BINS -1, since histogram is an array of sie [MAX_BINS], last position is MAX_BINS -1
+                    bin = LAST_BIN_POS;
+                }
 
-            #ifdef HIGH_LAT_VERBOSE
-            if (max_latency_this_burst==0 && latency_ns>= huge_latency_warning_ns){
-                max_latency_this_burst = latency_ns;
-                max_latency_this_burst_sent_ts = sent_ts;
-                max_latency_this_burst_recv_ts = recv_ts;
-                max_latency_this_burst_payload = *(uint64_t*)(payload + SEQ_NUM_OFFSET);
-            }
-            #endif
+                if (latency > overall.online_max_tsc){
+                    overall.online_max_tsc = latency;
+                }
 
-            if (stats_enabled) {
+
+
+                #ifdef HIGH_LAT_VERBOSE
+                if (max_latency_this_burst==0 && latency_ns>= huge_latency_warning_ns){
+                    max_latency_this_burst = latency_ns;
+                    max_latency_this_burst_sent_ts = sent_ts;
+                    max_latency_this_burst_recv_ts = recv_ts;
+                    max_latency_this_burst_payload = *(uint64_t*)(payload + SEQ_NUM_OFFSET);
+                }
+                #endif
+
                 stats.histogram[bin]++; 
                 
                 stats.latency_total_tsc += latency;
@@ -2853,11 +2917,8 @@ static void print_overall_stats(void) {
     }
     
     if (overall.total_rx > 0) {
-        double tsc_per_us = tsc_hz / 1e6;      
-        
-        
-        
-        
+        double tsc_per_us = (double)tsc_hz / (double)1e6;
+
         // // // long double p95_0000_fusAccurate = overall.p95_ns_accurate / 1000.0;
         // // // long double p99_0000_fusAccurate = overall.p99_ns_accurate / 1000.0;
         // // // printf("Overall 95.0000th percentile latency ACCURATE: %20.13Lf us\n", p95_0000_fusAccurate);
@@ -2872,8 +2933,16 @@ static void print_overall_stats(void) {
         printf(">>>Overall Max latency Online: %16.7f us\n", (double)overall.onlineMax_tsc / tsc_per_us);
         #endif
 
-        printf("Overall Min latency from bins:        %16.9Lf us\n", ((long double)overall.min_latency_ns / (long double)1000.0) );
-        printf("Overall Max latency from bins:        %16.9Lf us\n", ((long double)overall.max_latency_ns / (long double)1000.0) );
+
+        uint64_t tsc_hz = rte_get_tsc_hz(); // this returns like 2.500.000.000 if frequency is 2.5GHz
+
+        // how many tsc per bin = <<how many tsc per second>> / <<how many bins per second>>
+        long double tsc_per_high_accuracy_bin = (long double)tsc_hz / (long double)HIGH_ACCURACY_BINS_IN_A_SECOND; // <2500M / 10M = 250>. 
+        long double maxOnlineLatency_ns = (long double)overall.online_max_tsc / (long double)tsc_per_high_accuracy_bin;
+
+        printf("Overall Min latency from bins:        %16.9Lf us\n", ((long double)overall.min_latency_ns   / (long double)1000.0) );
+        printf("Overall Max latency from bins:        %16.9Lf us\n", ((long double)overall.max_latency_ns   / (long double)1000.0) );
+        printf("Overall Max latency ONLINE:           %16.9Lf us\n", ((long double)maxOnlineLatency_ns      / (long double)1000.0) );
         
         
         #ifdef ONLINE
@@ -2882,14 +2951,14 @@ static void print_overall_stats(void) {
         #endif
 
 
-        printf("Overall StdDev  latency from bins:    %16.9Lf us\n", ((long double)overall.stddev_latency_ex_post / (long double)1000.0) );
-        printf("Overall Average latency from bins:    %16.9Lf us\n", ((long double)overall.avg_latency_ex_post / (long double)1000.0) );
-        printf("Overall 95.0000th percentile latency: %16.9Lf us\n", ((long double)overall.p95_ns / (long double)1000.0) );
-        printf("Overall 99.0000th percentile latency: %16.9Lf us\n", ((long double)overall.p99_ns / (long double)1000.0) );
-        printf("Overall 99.9000th percentile latency: %16.9Lf us\n", ((long double)overall.p99_9000_ns / (long double)1000.0) );
-        printf("Overall 99.9900th percentile latency: %16.9Lf us\n", ((long double)overall.p99_9900_ns / (long double)1000.0) );
-        printf("Overall 99.9990th percentile latency: %16.9Lf us\n", ((long double)overall.p99_9990_ns / (long double)1000.0) );
-        printf("Overall 99.9999th percentile latency: %16.9Lf us\n", ((long double)overall.p99_9999_ns / (long double)1000.0) );
+        printf("Overall StdDev  latency from bins:    %16.9Lf us\n", ((long double)overall.stddev_latency_ex_post   / (long double)1000.0) );
+        printf("Overall Average latency from bins:    %16.9Lf us\n", ((long double)overall.avg_latency_ex_post      / (long double)1000.0) );
+        printf("Overall 95.0000th percentile latency: %16.9Lf us\n", ((long double)overall.p95_ns                   / (long double)1000.0) );
+        printf("Overall 99.0000th percentile latency: %16.9Lf us\n", ((long double)overall.p99_ns                   / (long double)1000.0) );
+        printf("Overall 99.9000th percentile latency: %16.9Lf us\n", ((long double)overall.p99_9000_ns              / (long double)1000.0) );
+        printf("Overall 99.9900th percentile latency: %16.9Lf us\n", ((long double)overall.p99_9900_ns              / (long double)1000.0) );
+        printf("Overall 99.9990th percentile latency: %16.9Lf us\n", ((long double)overall.p99_9990_ns              / (long double)1000.0) );
+        printf("Overall 99.9999th percentile latency: %16.9Lf us\n", ((long double)overall.p99_9999_ns              / (long double)1000.0) );
 
     } else {
         printf("\n\nNo packets received overall\n\n");
@@ -3598,18 +3667,26 @@ int main(int argc, char **argv) {
     // Enable statistics
     
     // Reset all statistics to start fresh after warmup
+    // TODO. is this correct? toctou? -> stats_enabled shall wrap anything.
     memset(&stats, 0, sizeof(stats));
-
+    memset(&overall, 0, sizeof(overall));
+    
     #ifdef ONLINE
     stats.min_latency = UINT64_MAX;
     stats.max_latency = 0;
     #endif
-
+    
     #ifdef DEBUG
     stats.interval_min_latency = UINT64_MAX;
     stats.interval_max_latency = 0;
     reset_interval_stats();                 // sets interval_start_tsc to now
     #endif
+    
+    // "write memory barrier : Guarantees that the STORE operations generated before the barrier occur before the STORE operations generated after."
+    rte_wmb();                  
+    
+    // "Compiler barrier: Guarantees that operation reordering does not occur at compile time for operations directly before and after the barrier."
+    rte_compiler_barrier();     
 
     stats_enabled = 1;
 
