@@ -180,12 +180,14 @@ NAME=""                # Optional experiment name (appended to filename)
 TYPES=("baseline" "interrupt-only" "pause" "hybrid" "pure")
 
 # --- Tunable DPDK Parameters ---
-# These can be overridden via CLI flags (see getopts below)
+# changed via CLI flags -> getopts
 minConsEmpty=10000
 maxIntTimeout=10
 gracePollCount=1000
 baseline_pause_duration=50
 pause_duration=1
+
+BASE_NAME_LATEST=''
 
 ## ## sudo chrt -f 99 ./build/examples/dpdk-l3fwd-power -l 0 -- --pmd-mgmt=baseline --busypolling_pause_duration_ns=50    -p 0x3 --config="(0,0,0),(1,0,0)"
 
@@ -220,18 +222,18 @@ start_l3fwd() {
             sleep $DPDK_STARTUP_DELAY
             ;;
         interrupt-only)
-            sudo chrt -f 99  $L3FWD_PATH -l $DPDK_CORE_OPTION -- --interrupt-only -p 0x3 --config=$DPDK_QUEUE_CONFIG > "$RESULTS_DIR/l3fwd.log" 2>&1 &
+            sudo chrt -f 99  $L3FWD_PATH -l $DPDK_CORE_OPTION -- --interrupt-only -p 0x3 --config=$DPDK_QUEUE_CONFIG > "$RESULTS_DIR/l3fwd_intonly.log" 2>&1 &
             L3FWD_PID=$!
             sleep $DPDK_STARTUP_DELAY
             ;;
         hybrid)
             # sudo $L3FWD_PATH -l $DPDK_CORE_OPTION -- --hybrid  -p 0x3 --config=$DPDK_QUEUE_CONFIG > "$RESULTS_DIR/l3fwd.log" 2>&1 &
-            sudo chrt -f 99  $L3FWD_PATH -l $DPDK_CORE_OPTION -- --hybrid  --min-cons-empty=$minConsEmpty  --max-interrupt-timeout=$maxIntTimeout  --grace-poll-count=$gracePollCount  -p 0x3 --config=$DPDK_QUEUE_CONFIG > "$RESULTS_DIR/l3fwd.log" 2>&1 &
+            sudo chrt -f 99  $L3FWD_PATH -l $DPDK_CORE_OPTION -- --hybrid  --min-cons-empty=$minConsEmpty  --max-interrupt-timeout=$maxIntTimeout  --grace-poll-count=$gracePollCount  -p 0x3 --config=$DPDK_QUEUE_CONFIG > "$RESULTS_DIR/l3fwd_hybrid.log" 2>&1 &
             L3FWD_PID=$!
             sleep $DPDK_STARTUP_DELAY
             ;;
         pause)
-            sudo chrt -f 99  $L3FWD_PATH -l $DPDK_CORE_OPTION -- --pmd-mgmt=pause --pause-duration=$pause_duration -p 0x3 --config=$DPDK_QUEUE_CONFIG > "$RESULTS_DIR/l3fwd.log" 2>&1 &
+            sudo chrt -f 99  $L3FWD_PATH -l $DPDK_CORE_OPTION -- --pmd-mgmt=pause --pause-duration=$pause_duration -p 0x3 --config=$DPDK_QUEUE_CONFIG > "$RESULTS_DIR/l3fwd_pause.log" 2>&1 &
             L3FWD_PID=$!
             sleep $DPDK_STARTUP_DELAY
             ;;
@@ -239,7 +241,7 @@ start_l3fwd() {
             scale_freq_min=$2
             scale_freq_max=$3
             max_empty_polls=$4
-            sudo chrt -f 99  $L3FWD_PATH -l $DPDK_CORE_OPTION -- --pmd-mgmt=scale --pause-duration=1    -p 0x3 --config=$DPDK_QUEUE_CONFIG > "$RESULTS_DIR/l3fwd.log" 2>&1 &
+            sudo chrt -f 99  $L3FWD_PATH -l $DPDK_CORE_OPTION -- --pmd-mgmt=scale --pause-duration=1    -p 0x3 --config=$DPDK_QUEUE_CONFIG > "$RESULTS_DIR/l3fwd_scale.log" 2>&1 &
             L3FWD_PID=$!
             sleep $DPDK_STARTUP_DELAY
             ;;
@@ -251,7 +253,44 @@ start_l3fwd() {
 stop_l3fwd() {
     echo "[$(date +%T)] Stopping l3fwd-power"
     sudo kill -TERM $L3FWD_PID 2>/dev/null
-    sleep 10
+    sleep 3
+    sudo pkill -TERM -f "dpdk-l3fwd-power" 2>/dev/null || true
+    sleep 3   
+    sudo killall -9 dpdk-l3fwd-power 2>/dev/null || true
+    sleep 3 
+    sudo rm -rf /var/run/dpdk/* /dev/shm/dpdk* 2>/dev/null || true
+    sleep 3
+}
+
+
+rename_l3fwd_logfile(){
+    local type="$1"
+    local src_log=""
+
+    case $type in
+        baseline)
+            src_log="$RESULTS_DIR/l3fwd_baseline.log" ;;
+        pure)
+            src_log="$RESULTS_DIR/l3fwd_pure.log" ;;
+        interrupt-only)
+            src_log="$RESULTS_DIR/l3fwd_pure.log" ;;
+        hybrid)
+            src_log="$RESULTS_DIR/l3fwd_pure.log" ;;
+        pause)
+            src_log="$RESULTS_DIR/l3fwd_pure.log" ;;
+        scale)
+            src_log="$RESULTS_DIR/l3fwd_pure.log" ;;
+        *)        
+            src_log="$RESULTS_DIR/l3fwd.log" ;;
+    esac
+
+    if [ ! -f "$src_log" ]; then
+        echo "WARNING: forwarder log not found: $src_log"
+        return
+    fi
+
+    local dest_log="${BASE_NAME_LATEST}_dpdk"
+    mv "$src_log" "$dest_log"
 }
 
 
@@ -300,6 +339,7 @@ generate_pattern_string() {
             ;;
     esac
 }
+
 
 
 run_latency_test() {
@@ -373,9 +413,8 @@ run_latency_test() {
         rate_param=""
         burst_param=""
     elif [[ "$pattern" == "multipleExpLogn" || "$pattern" == "web" ]]; then
-        # Use the extra arguments as-is (positional)
         pattern_specific_params="$EXTRA_ARGS"
-        # Nominal bitrate (approx 1 Mpps) – adjust if needed
+        # Nominal bitrate (approx 1 Mpps)
         byterate=$((size * 1000000 * 8))
         rate_param=""
         burst_param=" -B $BURST_SIZE"       # include burst size
@@ -393,7 +432,7 @@ run_latency_test() {
         burst_param=" -B $BURST_SIZE"
     fi
 
-    # Skip configurations exceeding MAX_BITRATE
+    # Skip configurations exceeding MAX_BITRATE . this needs to be updated betwen whiskey and treebeard
     if (( byterate > MAX_BITRATE )); then
         echo "Skipping configuration: ${size}B @ ${rate}pps = $((byterate/1000000))Mbps (>limit)"
         return
@@ -424,6 +463,8 @@ run_latency_test() {
     if [[ -n "$NAME" ]]; then
         base_name="${base_name}_${NAME}"
     fi
+
+    BASE_NAME_LATEST="${base_name}"
 
     local power_file="${base_name}_power"
     local latency_file="${base_name}_latency"
@@ -560,7 +601,8 @@ main() {
             ;;
         esac
 
-    stop_l3fwd
+        stop_l3fwd
+        rename_l3fwd_logfile $type
     done
 
     echo "[$(date +%T)] All tests completed!"
@@ -643,7 +685,7 @@ while getopts "t:s:r:p:b:T:S:E:d:C:P:U:N:R:L:K:D:F:G:I:v:w:x:y:z:W:X:A:n:m:M:g:B
         A) EXTRA_ARGS="$OPTARG" ;;
         n) NAME="$OPTARG" ;;
 
-        # --- new tunable DPDK parameter flags ---
+        # --- tunable DPDK forwarder opts ---
         m) minConsEmpty="$OPTARG" ;;
         M) maxIntTimeout="$OPTARG" ;;
         g) gracePollCount="$OPTARG" ;;
@@ -695,7 +737,7 @@ esac
 
 main 2>&1 | tee "${RESULTS_DIR}/measurement_$(date +%Y%m%d_%H%M%S).log"
 
-# Final cleanup
+# Final cleanup (should not be needed ..???)
 ssh $SSH_OPTS ${SERVER_B_USER}@${SERVER_B_HOST} \
     "sudo pkill -f latency_test" >/dev/null 2>&1
 
@@ -721,9 +763,9 @@ ssh $SSH_OPTS ${SERVER_B_USER}@${SERVER_B_HOST} \
 ## 
 ## Mean ON duration  = 0.000050 s (     50.00 us)
 ## Mean OFF duration = 0.000050 s (     50.00 us)
-## Mean inter‑burst  = 0.000001 s (      1.00 us)
+## Mean inter-burst  = 0.000001 s (      1.00 us)
 ## Expected packet rate (ON phase) = 32'000'000.0 pps
-## Long‑term average packet rate   = 16'000'000.0 pps
+## Long-term average packet rate   = 16'000'000.0 pps
 
 
 

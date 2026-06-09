@@ -164,9 +164,9 @@ EXPERIMENTS_SMOL=(
 
 ## | Mode                     | Parameter                       | Unit                          | Default              |
 ## |--------------------------|---------------------------------|-------------------------------|----------------------|
-## | Hybrid short sleep       | --max/min-small-sleep           | µs                            | 10–50 µs             |
-## | Hybrid interrupt timeout | --max-interrupt-timeout         | µs                            | 300 µs               |
-## | Interrupt-only           | (not configurable)              | µs                            | 1 or 300 µs hardcoded|
+## | Hybrid short sleep       | --max/min-small-sleep           | us                            | 10-50 us             |
+## | Hybrid interrupt timeout | --max-interrupt-timeout         | us                            | 300 us               |
+## | Interrupt-only           | (not configurable)              | us                            | 1 or 300 us hardcoded|
 ## | PMD pause (clb_pause)    | --pause-duration                | ns (modified from upstream)   | 200 ns               |
 ## | Baseline pause           | --busypolling_pause_duration_ns | ns                            | 50 ns                |
 
@@ -179,9 +179,10 @@ echo "========== Parameter sweep started at $(date) =========="
 
 
 TARGET_FREQUENCIES=(1200000 1400000 1600000 1800000 2000000 2200000 2400000)
+TARGET_FREQUENCIES_SMOL=(1200000 1400000)
 
 
-for target_freq in "${TARGET_FREQUENCIES[@]}"; do
+for target_freq in "${TARGET_FREQUENCIES_SMOL[@]}"; do
     sudo $FREQ_SCRIPT --enable-cstates $target_freq $target_freq
 
     echo "=== === === === === === ==="
@@ -235,7 +236,7 @@ for target_freq in "${TARGET_FREQUENCIES[@]}"; do
             ## ## eval "$cmd"   
             eval "$cmd" || {
                 ret=$?
-                echo "WARNING: Experiment failed with code $ret at $(date), continuing sweep…"
+                echo "WARNING: Experiment failed with code $ret at $(date), continuing sweep..."
                 # other commands that are allowed to fail should use '|| true'
             }
 
