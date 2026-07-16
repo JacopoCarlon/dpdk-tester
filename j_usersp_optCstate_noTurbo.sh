@@ -1,19 +1,17 @@
 #!/bin/bash
-# j_fixed_freq_userspace.sh
+# j_usersp_optCstate_noTurbo.sh
 # Disable Turbo, optionally enable/disable C-states, set governor to userspace,
 # and fix the CPU frequency range to user-provided min/max values.
 
 # ----------------------------------------------------------------------
-# User settings - must match those used in setup.sh
-# ----------------------------------------------------------------------
-TARGET_CPUS="all"   # Set to the same value as in setup.sh
+# User settings TARGET_CPUS="all"   
 # ----------------------------------------------------------------------
 
 
-##  # Disable Turbo, disable C-states (default), set userspace governor and frequency range
+##  # e.g. Disable Turbo, disable C-states (default), set userspace governor and frequency range
 ##  sudo ./j_usersp_optCstate_noTurbo.sh 800000 2000000
 ##  
-##  # Disable Turbo, enable C-states, set userspace governor and frequency range
+##  # e.g. Disable Turbo, enable all C-states, set userspace governor and frequency range
 ##  sudo ./j_usersp_optCstate_noTurbo.sh --enable-cstates 800000 2000000
 
 sudo sysctl kernel.sched_rt_runtime_us=-1
@@ -48,7 +46,7 @@ MIN_FREQ=$1
 MAX_FREQ=$2
 
 # ----------------------------------------------------------------------
-# Helper functions to identify target CPUs (same as original script)
+# Helper functions to identify target CPUs
 # ----------------------------------------------------------------------
 declare -A CPU_TARGET
 if [[ "$TARGET_CPUS" == "all" ]]; then
@@ -145,7 +143,7 @@ for policy in /sys/devices/system/cpu/cpufreq/policy[0-9]*; do
 done
 
 # ----------------------------------------------------------------------
-# 3. Configure C-states and other per-CPU tunables
+# 3. Configure C-states 
 # ----------------------------------------------------------------------
 echo ""
 if [ $ENABLE_CSTATES -eq 1 ]; then
@@ -169,7 +167,7 @@ for cpu in /sys/devices/system/cpu/cpu[0-9]*; do
                     if [ $ENABLE_CSTATES -eq 1 ]; then
                         echo 0 | sudo tee "$state/disable" > /dev/null 2>/dev/null  	# enable state
                     else
-                        echo 1 | sudo tee "$state/disable" > /dev/null 2>/dev/null 	# disable state (silent on failure)
+                        echo 1 | sudo tee "$state/disable" > /dev/null 2>/dev/null 	    # disable state (silent on failure)
                     fi
                 fi
             done
@@ -197,7 +195,7 @@ for cpu in /sys/devices/system/cpu/cpu[0-9]*; do
 done
 
 # ----------------------------------------------------------------------
-# 5. (Optional) Show C-state status for target CPUs
+# 5. Show C-state status for target CPUs
 # ----------------------------------------------------------------------
 echo ""
 echo "C-state status (disable=1 means disabled):"
