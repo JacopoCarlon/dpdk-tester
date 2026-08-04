@@ -468,6 +468,8 @@ run_latency_test() {
 
     BASE_NAME_LATEST="${base_name}"
 
+    local cstates_file="${base_name}_cstates"
+
     local power_file="${base_name}_power"
     local latency_file="${base_name}_latency"
     local remote_log="/tmp/latency_temp_${type}_${size}_${rate}.log"
@@ -496,9 +498,53 @@ run_latency_test() {
 
     sleep $INITIAL_WAIT
 
+
+    # Collect C-state counters before RAPL
+    #   -> this way we get the cstate of actual execution,
+    #      .. perfectly wrapping RAPL is not strictly needed.
+    {
+        echo "=== PRE_RAPL C-state counters (before RAPL) ==="
+        echo "Timestamp: $(date +%s)"
+        for core in $(echo "$LATENCY_TEST_CORES" | tr ',' ' '); do
+            cpu_dir="/sys/devices/system/cpu/cpu${core}/cpuidle"
+            if [ -d "$cpu_dir" ]; then
+                for state_dir in "$cpu_dir"/state*; do
+                    [ -d "$state_dir" ] || continue
+                    state_name=$(cat "$state_dir/name")
+                    state_usage=$(cat "$state_dir/usage")
+                    state_time=$(cat "$state_dir/time")
+                    echo "cpu${core} $(basename $state_dir): name=${state_name} usage=${state_usage} time=${state_time}"
+                done
+            fi
+        done
+        echo ""
+    } > "$cstates_file"
+
+
     # Start power measurement on Server A
     echo "[$(date +%T)] Starting power measurement..."
     $RAPL_SCRIPT -y -r -c $((MEASUREMENT_DURATION + 2)) -s 1 "$power_file"
+
+
+    # Collect C-state counters after RAPL
+    {
+        echo "=== POST_RAPL C-state counters (after RAPL) ==="
+        echo "Timestamp: $(date +%s)"
+        for core in $(echo "$LATENCY_TEST_CORES" | tr ',' ' '); do
+            cpu_dir="/sys/devices/system/cpu/cpu${core}/cpuidle"
+            if [ -d "$cpu_dir" ]; then
+                for state_dir in "$cpu_dir"/state*; do
+                    [ -d "$state_dir" ] || continue
+                    state_name=$(cat "$state_dir/name")
+                    state_usage=$(cat "$state_dir/usage")
+                    state_time=$(cat "$state_dir/time")
+                    echo "cpu${core} $(basename $state_dir): name=${state_name} usage=${state_usage} time=${state_time}"
+                done
+            fi
+        done
+        echo ""
+    } >> "$cstates_file"
+
 
     # Stop latency test gracefully
     echo "[$(date +%T)] Stopping latency test and collecting results..."
@@ -533,9 +579,12 @@ run_latency_test() {
     # Validation
     [ -s "$power_file" ] || echo "Warning: Power measurement failed for ${base_name}"
     [ -s "$latency_file" ] || echo "Warning: Latency log not captured for ${base_name}"
+    [ -s "$cstates_file" ] || echo "Warning: Cstate counters not captured for ${base_name}"
 
     sleep $COOLDOWN
 }
+
+
 
 main() {
     mkdir -p "$RESULTS_DIR"
