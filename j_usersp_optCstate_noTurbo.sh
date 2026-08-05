@@ -27,13 +27,13 @@ TARGET_FREQ_CPUS="all"
 
 
 ##  # e.g. Disable Turbo, disable C-states (default), set userspace governor and frequency range
-##  sudo ./j_usersp_optCstate_noTurbo.sh 800000 2000000
+##  sudo ./j_usersp_optCstate_noTurbo.sh 2000000 2000000
 ##  
 ##  # e.g. Disable Turbo, enable all C-states, set userspace governor and frequency range
-##  sudo ./j_usersp_optCstate_noTurbo.sh --enable-cstates 800000 2000000
+##  sudo ./j_usersp_optCstate_noTurbo.sh --enable-cstates 2000000 2000000
 ##  
 ##  # e.g. Disable Turbo, enable only POLL and C1E, set userspace governor and frequency range
-##  sudo ./j_usersp_optCstate_noTurbo.sh --cstates POLL,C1E 800000 2000000
+##  sudo ./j_usersp_optCstate_noTurbo.sh --cstates POLL,C1E 2000000 2000000
 sudo sysctl kernel.sched_rt_runtime_us=-1
 
 # Parse optional flags
@@ -390,5 +390,28 @@ for cpu in /sys/devices/system/cpu/cpu[0-9]*; do
         echo
     fi
 done
+
+
+# ----------------------------------------------------------------------
+# 6 = 4bis. Show current settings for target CPUs ... again, just in case
+# ----------------------------------------------------------------------
+echo ""
+echo "#CPU scaling_governor scaling_cur_freq scaling_min_freq scaling_max_freq energy_perf_pref energy_perf_bias resume_latency"
+for cpu in /sys/devices/system/cpu/cpu[0-9]*; do
+    n=${cpu#/sys/devices/system/cpu/cpu}
+    if cpu_is_target "$n"; then
+        echo $cpu \
+            $(cat $cpu/cpufreq/scaling_governor 2>/dev/null) \
+            $(cat $cpu/cpufreq/scaling_cur_freq 2>/dev/null) \
+            $(cat $cpu/cpufreq/scaling_min_freq 2>/dev/null) \
+            $(cat $cpu/cpufreq/scaling_max_freq 2>/dev/null) \
+            $(cat $cpu/cpufreq/energy_performance_preference 2>/dev/null) \
+            $(cat $cpu/power/energy_perf_bias 2>/dev/null) \
+            $(cat $cpu/power/pm_qos_resume_latency_us 2>/dev/null)
+    fi
+done
+
+
+
 
 
