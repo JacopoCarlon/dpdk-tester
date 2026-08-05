@@ -503,8 +503,7 @@ run_latency_test() {
     #   -> this way we get the cstate of actual execution,
     #      .. perfectly wrapping RAPL is not strictly needed.
     {
-        echo "=== PRE_RAPL C-state counters (before RAPL) ==="
-        echo "Timestamp: $(date +%s)"
+        echo "C-state counters (before RAPL) Timestamp: $(date +%s)"
         for core in $(echo "$LATENCY_TEST_CORES" | tr ',' ' '); do
             cpu_dir="/sys/devices/system/cpu/cpu${core}/cpuidle"
             if [ -d "$cpu_dir" ]; then
@@ -528,8 +527,7 @@ run_latency_test() {
 
     # Collect C-state counters after RAPL
     {
-        echo "=== POST_RAPL C-state counters (after RAPL) ==="
-        echo "Timestamp: $(date +%s)"
+        echo "C-state counters (after RAPL) Timestamp: $(date +%s)"
         for core in $(echo "$LATENCY_TEST_CORES" | tr ',' ' '); do
             cpu_dir="/sys/devices/system/cpu/cpu${core}/cpuidle"
             if [ -d "$cpu_dir" ]; then

@@ -4,8 +4,25 @@
 # and fix the CPU frequency range to user-provided min/max values.
 
 # ----------------------------------------------------------------------
-# User settings TARGET_CPUS="all"   
+# User settings 
+TARGET_CPUS="all"   
+TARGET_CSTATE_CPUS="2,4,6"
+
+
+##  test with: sudo ./j_usersp_optCstate_noTurbo.sh --cstates POLL,C1 2000000 2000000
 # ----------------------------------------------------------------------
+
+
+# e.g. cstates on whiskey
+## carlon@whiskey:~$ {     echo "C-state counters (before RAPL) Timestamp: $(date +%s)";     for core in {2,4,6}; do         cpu_dir="/sys/devices/system/cpu/cpu${core}/cpuidle";         if [ -d "$cpu_dir" ]; then             for state_dir in "$cpu_dir"/state*; do                 [ -d "$state_dir" ] || continue;                 state_name=$(cat "$state_dir/name");                 state_usage=$(cat "$state_dir/usage");                 state_time=$(cat "$state_dir/time");                 echo "cpu${core} $(basename $state_dir): name=${state_name} usage=${state_usage} time=${state_time}";             done;         fi;     done;     echo ""; } > c.txt
+## carlon@whiskey:~$ cat c.txt 
+##  C-state counters (before RAPL) Timestamp: 1785928897
+##  cpu2 state0: name=POLL usage=4148 time=65865
+##  cpu2 state1: name=C1 usage=44443 time=5192005
+##  cpu2 state2: name=C1E usage=727923 time=117745698
+##  cpu2 state3: name=C3 usage=0 time=0
+##  cpu2 state4: name=C6 usage=16713415 time=416813286631
+
 
 
 ##  # e.g. Disable Turbo, disable C-states (default), set userspace governor and frequency range
@@ -13,21 +30,36 @@
 ##  
 ##  # e.g. Disable Turbo, enable all C-states, set userspace governor and frequency range
 ##  sudo ./j_usersp_optCstate_noTurbo.sh --enable-cstates 800000 2000000
-
+##  
+##  # e.g. Disable Turbo, enable only POLL and C1E, set userspace governor and frequency range
+##  sudo ./j_usersp_optCstate_noTurbo.sh --cstates POLL,C1E 800000 2000000
 sudo sysctl kernel.sched_rt_runtime_us=-1
 
-# Parse optional flag --enable-cstates
+# Parse optional flags
 ENABLE_CSTATES=0   # default: disabled
+CSTATE_LIST=""     # defualt: is empty -> use ENABLE_CSTATES logic
+
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --enable-cstates)
             ENABLE_CSTATES=1
+            ## drop flag --enable-cstates
             shift
             ;;
+        --cstates)
+            CSTATE_LIST="$2"
+            ## drop flag --cstates and its parameter object
+            shift 2
+            ;;
         --help)
-            echo "Usage: $0 [--enable-cstates] <min_freq_kHz> <max_freq_kHz>"
-            echo "  --enable-cstates   Enable all C-states (default: disabled)"
+            echo "Usage: $0 [--enable-cstates | --cstates LIST] <min_freq_kHz> <max_freq_kHz>"
+            echo "  --enable-cstates    Enable all C-states (default: disabled)"
+            echo "  --cstates LIST      Enable only the listed C-states (comma-separated names or indices)"
+            echo "                      e.g. --cstates POLL,C1E   or   --cstates 0,2"
+            echo "  If neither is given, all C-states are disabled."
             echo "Example: $0 800000 2000000"
+            echo "Example: $0 --enable-cstates 800000 2000000"
+            echo "Example: $0 --cstates POLL,C1E 800000 2000000"
             exit 0
             ;;
         *)
@@ -38,7 +70,7 @@ done
 
 # Check for required parameters
 if [ $# -ne 2 ]; then
-    echo "Usage: $0 [--enable-cstates] <min_freq_kHz> <max_freq_kHz>" >&2
+    echo "Usage: $0 [--enable-cstates | --cstates LIST] <min_freq_kHz> <max_freq_kHz>" >&2
     exit 1
 fi
 
@@ -77,6 +109,89 @@ any_cpu_target() {
     done
     return 1
 }
+
+
+
+declare -A CSTATE_CPU_TARGET
+if [[ "$TARGET_CSTATE_CPUS" == "all" ]]; then
+    for cpu in /sys/devices/system/cpu/cpu[0-9]*; do
+        n=${cpu#/sys/devices/system/cpu/cpu}
+        CSTATE_CPU_TARGET[$n]=1
+    done
+else
+    IFS=',' read -ra cstate_parts <<< "$TARGET_CSTATE_CPUS"
+    for part in "${cstate_parts[@]}"; do
+        if [[ $part =~ ^([0-9]+)-([0-9]+)$ ]]; then
+            for ((i=${BASH_REMATCH[1]}; i<=${BASH_REMATCH[2]}; i++)); do
+                CSTATE_CPU_TARGET[$i]=1
+            done
+        elif [[ $part =~ ^[0-9]+$ ]]; then
+            CSTATE_CPU_TARGET[$part]=1
+        fi
+    done
+fi
+
+cpu_is_target_cstate() { [[ -n ${CSTATE_CPU_TARGET[$1]} ]]; }
+
+
+
+
+
+
+
+
+# ----------------------------------------------------------------------
+# Resolve C-state whitelist (if any)
+# ----------------------------------------------------------------------
+declare -A ALLOWED_CSTATES   # key = state name, value = 1 if allowed
+
+##  carlon@whiskey:/sys/devices/system/cpu/cpu0/cpuidle$ ls
+##  state0  state1  state2  state3  state4
+
+##  carlon@whiskey:/sys/devices/system/cpu/cpu0/cpuidle$ cat state0/name 
+##  POLL
+
+
+if [[ -n "$CSTATE_LIST" ]]; then
+    # since (if) cstate is passed by index, 
+    #   we need to find index-to-name map, take it from first cpu available
+    declare -A STATE_INDEX_TO_NAME
+    for cpu in /sys/devices/system/cpu/cpu[0-9]*; do
+        n=${cpu#/sys/devices/system/cpu/cpu}
+        if cpu_is_target "$n" && [ -d "$cpu/cpuidle" ]; then
+            for state in "$cpu"/cpuidle/state*; do
+                idx=${state##*state}                     # e.g. "0"
+                name=$(cat "$state/name" 2>/dev/null)
+                STATE_INDEX_TO_NAME[$idx]=$name
+            done
+            break
+        fi
+    done
+
+    # Parse the comma-separated list
+    IFS=',' read -ra TOKENS <<< "$CSTATE_LIST"
+    for tok in "${TOKENS[@]}"; do
+        tok=$(echo "$tok" | xargs)   # remove trailing/leading whitespace with no args to xargs (this should not be needed tho..)
+        if [[ "$tok" =~ ^[0-9]+$ ]]; then
+            ## if token is index, we map it to name
+            name="${STATE_INDEX_TO_NAME[$tok]}"
+            if [[ -n "$name" ]]; then
+                ALLOWED_CSTATES["$name"]=1
+            else
+                echo "Warning: C-state index $tok not found on this system, ignoring."
+            fi
+        else
+            ## else if it is name already, ok.
+            ALLOWED_CSTATES["$tok"]=1
+        fi
+    done
+
+    if [[ ${#ALLOWED_CSTATES[@]} -eq 0 ]]; then
+        echo "Warning: --cstates list did not match any known C-state. No states will be enabled."
+    else
+        echo "C-state whitelist: ${!ALLOWED_CSTATES[*]}"
+    fi
+fi
 
 # ----------------------------------------------------------------------
 # 1. Disable Turbo Boost (system-wide)
@@ -146,7 +261,9 @@ done
 # 3. Configure C-states 
 # ----------------------------------------------------------------------
 echo ""
-if [ $ENABLE_CSTATES -eq 1 ]; then
+if [[ ${#ALLOWED_CSTATES[@]} -gt 0 ]]; then
+    echo "Configuring C-states: enabling only ${!ALLOWED_CSTATES[*]}"
+elif [ $ENABLE_CSTATES -eq 1 ]; then
     echo "Enabling all C-states (writing 0 to disable files)"
 else
     echo "Disabling all C-states (writing 1 to disable files) - some states may not be disableable"
@@ -154,7 +271,9 @@ fi
 
 for cpu in /sys/devices/system/cpu/cpu[0-9]*; do
     n=${cpu#/sys/devices/system/cpu/cpu}
-    if cpu_is_target "$n"; then
+
+    if cpu_is_target_cstate "$n"; then
+        # apply cstate controls on target-CPUs of the cstate control.
         if [ -e $cpu/power/energy_perf_bias ]; then
             echo performance > $cpu/power/energy_perf_bias
         fi
@@ -164,16 +283,37 @@ for cpu in /sys/devices/system/cpu/cpu[0-9]*; do
         if [ -d $cpu/cpuidle ]; then
             for state in $cpu/cpuidle/state*; do
                 if [ -f "$state/disable" ]; then
-                    if [ $ENABLE_CSTATES -eq 1 ]; then
-                        echo 0 | sudo tee "$state/disable" > /dev/null 2>/dev/null  	# enable state
+                    name=$(cat "$state/name" 2>/dev/null)
+                    if [[ ${#ALLOWED_CSTATES[@]} -gt 0 ]]; then
+                        if [[ -n "${ALLOWED_CSTATES[$name]}" ]]; then
+                            echo 0 | sudo tee "$state/disable" > /dev/null 2>/dev/null
+                        else
+                            echo 1 | sudo tee "$state/disable" > /dev/null 2>/dev/null
+                        fi
                     else
-                        echo 1 | sudo tee "$state/disable" > /dev/null 2>/dev/null 	    # disable state (silent on failure)
+                        if [ $ENABLE_CSTATES -eq 1 ]; then
+                            echo 0 | sudo tee "$state/disable" > /dev/null 2>/dev/null
+                        else
+                            echo 1 | sudo tee "$state/disable" > /dev/null 2>/dev/null
+                        fi
                     fi
+                fi
+            done
+        fi
+    else
+        # force all C-states enabled on non-target CPUs
+        #   i think this is the most logical thing to do, so they don't get high consumnption randomly
+        if [ -d $cpu/cpuidle ]; then
+            for state in $cpu/cpuidle/state*; do
+                if [ -f "$state/disable" ]; then
+                    echo 0 | sudo tee "$state/disable" > /dev/null 2>/dev/null
                 fi
             done
         fi
     fi
 done
+
+
 
 # ----------------------------------------------------------------------
 # 4. Show current settings for target CPUs
@@ -193,6 +333,8 @@ for cpu in /sys/devices/system/cpu/cpu[0-9]*; do
             $(cat $cpu/power/pm_qos_resume_latency_us 2>/dev/null)
     fi
 done
+
+
 
 # ----------------------------------------------------------------------
 # 5. Show C-state status for target CPUs
