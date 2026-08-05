@@ -7,6 +7,7 @@
 # User settings 
 TARGET_CPUS="all"   
 TARGET_CSTATE_CPUS="2,4,6"
+TARGET_FREQ_CPUS="2,4,6"
 
 
 ##  test with: sudo ./j_usersp_optCstate_noTurbo.sh --cstates POLL,C1 2000000 2000000
@@ -136,9 +137,36 @@ cpu_is_target_cstate() { [[ -n ${CSTATE_CPU_TARGET[$1]} ]]; }
 
 
 
+declare -A FREQ_CPU_TARGET
+if [[ "$TARGET_FREQ_CPUS" == "all" ]]; then
+    for cpu in /sys/devices/system/cpu/cpu[0-9]*; do
+        n=${cpu#/sys/devices/system/cpu/cpu}
+        FREQ_CPU_TARGET[$n]=1
+    done
+else
+    IFS=',' read -ra freq_parts <<< "$TARGET_FREQ_CPUS"
+    for part in "${freq_parts[@]}"; do
+        if [[ $part =~ ^([0-9]+)-([0-9]+)$ ]]; then
+            for ((i=${BASH_REMATCH[1]}; i<=${BASH_REMATCH[2]}; i++)); do
+                FREQ_CPU_TARGET[$i]=1
+            done
+        elif [[ $part =~ ^[0-9]+$ ]]; then
+            FREQ_CPU_TARGET[$part]=1
+        fi
+    done
+fi
 
+cpu_is_target_freq() { [[ -n ${FREQ_CPU_TARGET[$1]} ]]; }
 
-
+any_cpu_target_freq() {
+    local c
+    for c in $1; do
+        if cpu_is_target_freq "$c"; then
+            return 0
+        fi
+    done
+    return 1
+}
 
 # ----------------------------------------------------------------------
 # Resolve C-state whitelist (if any)
@@ -228,6 +256,19 @@ for policy in /sys/devices/system/cpu/cpufreq/policy[0-9]*; do
     if any_cpu_target "$cpus"; then
         echo "Configuring policy $policy (CPUs: $cpus)"
 
+        # decide which frequency to use
+        USE_MIN=""
+        USE_MAX=""
+        if any_cpu_target_freq "$cpus"; then
+            USE_MIN=$MIN_FREQ
+            USE_MAX=$MAX_FREQ
+            echo "  Using user-specified frequency"
+        else
+            USE_MIN=1200000
+            USE_MAX=1200000
+            echo "  Using default frequency 1200000-1200000 (kHz)"
+        fi
+
         if grep -q userspace $policy/scaling_available_governors; then
             echo userspace > $policy/scaling_governor
             echo "  Governor set to userspace"
@@ -238,20 +279,16 @@ for policy in /sys/devices/system/cpu/cpufreq/policy[0-9]*; do
 
         hw_min=$(cat $policy/cpuinfo_min_freq)
         hw_max=$(cat $policy/cpuinfo_max_freq)
-        if [ $MIN_FREQ -lt $hw_min ] || [ $MIN_FREQ -gt $hw_max ] || \
-           [ $MAX_FREQ -lt $hw_min ] || [ $MAX_FREQ -gt $hw_max ] || \
-           [ $MIN_FREQ -gt $MAX_FREQ ]; then
-            echo "  ERROR: requested range [$MIN_FREQ, $MAX_FREQ] kHz not within hardware limits [$hw_min, $hw_max] kHz."
+        if [ $USE_MIN -lt $hw_min ] || [ $USE_MIN -gt $hw_max ] || \
+            [ $USE_MAX -lt $hw_min ] || [ $USE_MAX -gt $hw_max ] || \
+            [ $USE_MIN -gt $USE_MAX ]; then
+            echo "  ERROR: requested range [$USE_MIN, $USE_MAX] kHz not within hardware limits [$hw_min, $hw_max] kHz."
             exit 1
         fi
 
-        echo $MIN_FREQ > $policy/scaling_min_freq
-        echo $MAX_FREQ > $policy/scaling_max_freq
-        echo "  Frequency range set to [$MIN_FREQ, $MAX_FREQ] kHz"
-
-        # Optionally lock frequency to MIN_FREQ (or MAX_FREQ) by writing to scaling_setspeed.
-        # Uncomment the following line if you want a fixed frequency.
-        # echo $MIN_FREQ > $policy/scaling_setspeed
+        echo $USE_MIN > $policy/scaling_min_freq
+        echo $USE_MAX > $policy/scaling_max_freq
+        echo "  Frequency range set to [$USE_MIN, $USE_MAX] kHz"
     else
         echo "Skipping policy $policy (CPUs: $cpus) - not in target set"
     fi
