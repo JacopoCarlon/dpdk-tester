@@ -1,6 +1,8 @@
 #!/bin/bash
 # run_rapl.sh - Power measurement tool with RAPL
 
+set -euo pipefail
+
 # Default values
 DEFAULT_ITERATIONS=50
 DEFAULT_INTERVAL=1

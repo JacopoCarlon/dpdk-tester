@@ -1,6 +1,8 @@
 #!/bin/bash
 # exp_auto_grid.sh - Complete measurement automation script for Server A
 
+set -euo pipefail
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ## this path should be something like 
 ## /home/jcarlon/zzz_test/dpdk-tester/collector
@@ -37,7 +39,7 @@ SERVER_B_SCRIPT_DIR="/home/carlon/test/dpdk-tester/generator/"
 L3FWD_PATH="${SCRIPT_DIR}/../../dpdk/build/examples/dpdk-l3fwd-power"
 RAPL_SCRIPT="${SCRIPT_DIR}/run_rapl.sh"
 RESULTS_DIR="${SCRIPT_DIR}/res" 
-MEASUREMENT_DURATION=50
+MEASUREMENT_DURATION=10
 MAX_BITRATE=400000000000  # 40 Gbps in bits/sec
 
 

@@ -107,40 +107,40 @@ TRAFFICS=(
 ##  ##  ##  }
 ############################################################
 EXPERIMENTS=(
-    # <<<<<<<<<<< pure busy polling with no pauses ever
-    #   "pure"
-    # <<<<<<<<<<< Baseline - vary baseline_pause_duration (nanoseconds)
-    #   "baseline -B 1"
-    #   "baseline -B 30"
-    #   "baseline -B 50"
-    #   "baseline -B 100"
-    #   "baseline -B 200"
-    #   "baseline -B 300"
-    #   "baseline -B 500"
-    #   "baseline -B 700"
-    #   "baseline -B 1000"
-    #   "baseline -B 2000"
-    # <<<<<<<<<<< Pause - vary pause_duration (nanoseconds)
-    #   "pause -q 1"
-    #   ### "pause -q 2"
-    #   ### "pause -q 3"
-    #   "pause -q 10"
-    #   "pause -q 30"
-    #   "pause -q 50"
-    #   "pause -q 100"
-    #   "pause -q 200"
-    #   "pause -q 300"
-    #   "pause -q 500"
-    #   "pause -q 1000"
-    #   "pause -q 1500"
-    #   "pause -q 2000"   
-    #   "pause -q 2500"   
-    # <<<<<<<<<<< Interrupt-only (no extra flags)
+    ### ### <<<<<<<<<<< pure busy polling with no pauses ever
+    "pure"
+    ### ### <<<<<<<<<<< Baseline - vary baseline_pause_duration (nanoseconds)
+    "baseline -B 1"
+    "baseline -B 30"
+    "baseline -B 50"
+    "baseline -B 100"
+    "baseline -B 200"
+    "baseline -B 300"
+    "baseline -B 500"
+    "baseline -B 700"
+    "baseline -B 1000"
+    # # "baseline -B 2000"
+    ### ### <<<<<<<<<<< Pause - vary pause_duration (nanoseconds)
+    "pause -q 1"
+    # # "pause -q 2"
+    # # "pause -q 3"
+    "pause -q 10"
+    "pause -q 30"
+    "pause -q 50"
+    "pause -q 100"
+    "pause -q 200"
+    "pause -q 300"
+    "pause -q 500"
+    "pause -q 1000"
+    "pause -q 1500"
+    # # "pause -q 2000"   
+    # # "pause -q 2500"   
+    ### ### <<<<<<<<<<< Interrupt-only (no extra flags)
     "interrupt-only"
-    # <<<<<<<<<<< Hybrid - vary minConsEmpty
+    ### ### <<<<<<<<<<< Hybrid - vary minConsEmpty
     "hybrid -m 1000 -M 100 -g 1000"
     "hybrid -m 10000 -M 100 -g 1000"
-    # <<<<<<<<<<< Hybrid - vary maxIntTimeout (microseconds)
+    ### ### <<<<<<<<<<< Hybrid - vary maxIntTimeout (microseconds)
     "hybrid -m 1000 -M 1000 -g 1000"
     "hybrid -m 1000 -M 1000 -g 2000"
     "hybrid -m 1000 -M 1000 -g 5000"
@@ -167,7 +167,8 @@ exec > >(tee -a "$WRAPPER_LOG") 2>&1
 echo "========== Parameter sweep started at $(date) =========="
 
 
-TARGET_FREQUENCIES=(1200000 1400000 1600000 1800000 2000000 2200000 2400000)
+TARGET_FREQUENCIES=(1200000 1600000 2000000 2400000)
+#TARGET_FREQUENCIES=(1200000 1400000 1600000 1800000 2000000 2200000 2400000)
 TARGET_FREQUENCIES_SMOL=(1200000 1400000)
 
 
@@ -190,9 +191,10 @@ TARGET_FREQUENCIES_SMOL=(1200000 1400000)
 
 
 for target_freq in "${TARGET_FREQUENCIES[@]}"; do
-    ##  ##  sudo $FREQ_SCRIPT --enable-cstates $target_freq $target_freq    ## this enables all cstates
+    ## run with all cstates enabled
+    sudo $FREQ_SCRIPT --enable-cstates $target_freq $target_freq 
 
-    sudo $FREQ_SCRIPT --cstates POLL,C1,C1E,C3 $target_freq $target_freq
+    #   cstateSuffix="PollC1C1eC3"
 
     echo "=== === === === === === ==="
     echo "=== === === === === === ==="
@@ -222,6 +224,8 @@ for target_freq in "${TARGET_FREQUENCIES[@]}"; do
             read -r type extra_flags <<< "$exp"
 
             # suffix includes both traffic name and frequency
+            #   suffix="${traffic_name}_freq${target_freq}_cstate${cstateSuffix}"
+
             suffix="${traffic_name}_freq${target_freq}"
 
             echo "----------------------------------------------------------------"

@@ -6,8 +6,8 @@
 # ----------------------------------------------------------------------
 # User settings 
 TARGET_CPUS="all"   
-TARGET_CSTATE_CPUS="2,4,6"
-TARGET_FREQ_CPUS="2,4,6"
+TARGET_CSTATE_CPUS="all"
+TARGET_FREQ_CPUS="all"
 
 
 ##  test with: sudo ./j_usersp_optCstate_noTurbo.sh --cstates POLL,C1 2000000 2000000
