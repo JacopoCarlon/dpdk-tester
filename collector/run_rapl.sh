@@ -1,7 +1,7 @@
 #!/bin/bash
 # run_rapl.sh - Power measurement tool with RAPL
 
-set -euo pipefail
+#   set -euo pipefail
 
 # Default values
 DEFAULT_ITERATIONS=50

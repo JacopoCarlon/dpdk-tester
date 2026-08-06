@@ -1,7 +1,7 @@
 #!/bin/bash
 # Usage: ./rapl_logger.sh <iterations> <tmpfile> <interval>
 
-set -euo pipefail
+#   set -euo pipefail
 
 ITERATIONS=$1
 TMPFILE=$2
