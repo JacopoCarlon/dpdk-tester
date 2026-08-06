@@ -1336,3 +1336,65 @@ carlon@whiskey:~/dpdk-tester/collector$
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Sono riuscito a sistemare il grub (ho rebootato e sono riuscito ad entrare correttamente, adesso stanno girando i test). 
+
+Se può essere utile, la procedura è stata:
+
+
+sudo cat   /boot/grub/grub.cfg 
+
+sudo nano /etc/default/grub
+     (### modificare grub-default in maniera che punti correttamente a linux 6.17, che è quello che stavamo usando correntemente, prima puntava ad un linux che non c'è nella macchina.)
+    GRUB_DEFAULT="gnulinux-advanced-87e4bc6d-bfe8-46d3-b28d-f86ec58ee725>gnulinux-6.17.0-35-generic-advanced-87e4bc6d-bfe8-46d3-b28d-f86ec58ee725"
+sudo update-grub2
+
+
+### poi, per selezionare la partizione /dev/sda1 
+sudo grub-install /dev/sda
+         grub-install: error: /usr/lib/grub/i386-pc/modinfo.sh doesn't exist. Please specify --target or --directory.
+
+ls /usr/lib/grub/
+sudo apt update
+sudo apt install grub-pc
+
+sudo grub-install /dev/sda
+        Installing for i386-pc platform.
+        Installation finished. No error reported.
+
+(questa cosa di grub-install /dev/sda è ciò che adesso punta il boot a /dev/sda1, e si può controllare in /boot/grub/grub.cfg come scrivo sotto)
+
+sudo cat /etc/default/grub
+sudo update-grub2 
+
+sudo reboot 
+
+--> al reboot funziona.
+
+vedendo sudo cat /boot/grub/grub.cfg, c'è <<<set root='hd0,msdos1'>>> che punta a first disk - first MBR partition -> /dev/sda1
+
+cat /proc/cmdline
+
+
