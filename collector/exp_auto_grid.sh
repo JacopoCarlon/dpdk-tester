@@ -438,7 +438,8 @@ run_latency_test() {
 
     # Skip configurations exceeding MAX_BITRATE . this needs to be updated betwen whiskey and treebeard
     if (( byterate > MAX_BITRATE )); then
-        echo "Skipping configuration: ${size}B @ ${rate}pps = $((byterate/1000000))Mbps (>limit)"
+        echo "Skipping configuration,, target byterate too high."
+        # echo "Skipping configuration: ${size}B @ ${rate}pps = $((byterate/1000000))Mbps (>limit)"
         return
     fi
 
@@ -468,14 +469,16 @@ run_latency_test() {
         base_name="${base_name}_${NAME}"
     fi
 
+    local rate_tag="${rate:-0}"
+
     BASE_NAME_LATEST="${base_name}"
 
     local cstates_file="${base_name}_cstates"
 
     local power_file="${base_name}_power"
     local latency_file="${base_name}_latency"
-    local remote_log="/tmp/latency_temp_${type}_${size}_${rate}.log"
-    local remote_pid="/tmp/latency_pid_${pattern}_${size}_${rate}.pid"
+    local remote_log="/tmp/latency_temp_${type}_${size}_${rate_tag}.log"
+    local remote_pid="/tmp/latency_pid_${pattern}_${size}_${rate_tag}.pid"
 
     echo "============================================================"
     echo "[$(date +%T)] Starting test: Type=$type, Pattern=$pattern, Size=${size}B"
