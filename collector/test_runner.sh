@@ -22,7 +22,7 @@ TRAFFICS=(
     "-p uniform -s 256 -b 32 -r 1000000 -n uniform"
     "-p uniform -s 256 -b 32 -r 2440000 -n uniform"
     ### lace: sudo ./latency_test -l 2,4,6  -- -p uniform -B 32 -s 256 -r 10000000 
-    "-p uniform -s 256 -b 32 -r 10000000 -n uniform"
+    #   "-p uniform -s 256 -b 32 -r 10000000 -n uniform"
 
 
 
@@ -36,7 +36,7 @@ TRAFFICS=(
     "-p tlogn -s 256 -b 32 -w -3.5 -x 0.1 -y -3.5 -z 0.1 -W -9.9 -X 0.1 -n tlogn"
     ##  # --- UNIPI --- circa 13Gbps
     ##  ### lace: sudo ./latency_test -l 0,2,4   -- -B 32 -s 256 -p tlogn -T -2.3  0.1  -4.5  0.1  -12.3  0.1
-    "-p tlogn -s 256 -b 32 -w -4.5 -x 0.1 -y -3.1 -z 0.1 -W -10.5 -X 0.1 -n tlogn"
+    #   "-p tlogn -s 256 -b 32 -w -4.5 -x 0.1 -y -3.1 -z 0.1 -W -10.5 -X 0.1 -n tlogn"
 
 
 
@@ -49,7 +49,7 @@ TRAFFICS=(
     '-p multipleExpLogn -s 256 -b 32 -A "250 2.0 14.45 0.35 100 5000000  5000000000" -n expLogn'
     '-p multipleExpLogn -s 256 -b 32 -A "350 2.0 14.45 0.35 100 5000000  9800000000" -n expLogn' 
     ##  ### lace: sudo ./latency_test -l 2,4,6 -- -B 256 -s 1024 -p multipleExpLogn -- 500  4.0  14.45  0.35 100 5000000 20000000000
-    '-p multipleExpLogn -s 256 -b 32 -A "500 4.0 14.45 0.35 100 5000000 20000000000" -n expLogn'
+    #   '-p multipleExpLogn -s 256 -b 32 -A "500 4.0 14.45 0.35 100 5000000 20000000000" -n expLogn'
 
 
 
@@ -62,7 +62,7 @@ TRAFFICS=(
     '-p web -s 256 -b 32 -A "80000   8.37 1.37 100 2000000 6.17 2.36 50 2000000 1.1 2.0 55.0 7.69 0.033  5000000000" -n web'
     '-p web -s 256 -b 32 -A "800000  8.37 1.37 100 2000000 6.17 2.36 50 2000000 1.1 2.0 55.0 7.69 0.033 10000000000" -n web'
     ### lace: sudo ./latency_test -l 2,4,6 -- -B 256 -s 1024 -p web 2500000 8.37 1.37 100 2000000 6.17 2.36 50 2000000 1.1 2.0 55.0 7.69 0.033 30000000000
-    '-p web -s 256 -b 32 -A "2500000 8.37 1.37 100 2000000 6.17 2.36 50 2000000 1.1 2.0 55.0 7.69 0.033 30000000000" -n web'
+    #   '-p web -s 256 -b 32 -A "2500000 8.37 1.37 100 2000000 6.17 2.36 50 2000000 1.1 2.0 55.0 7.69 0.033 30000000000" -n web'
 
 )
 
@@ -167,8 +167,8 @@ exec > >(tee -a "$WRAPPER_LOG") 2>&1
 echo "========== Parameter sweep started at $(date) =========="
 
 
-TARGET_FREQUENCIES=(1200000 1600000 2000000 2400000)
-#TARGET_FREQUENCIES=(1200000 1400000 1600000 1800000 2000000 2200000 2400000)
+#TARGET_FREQUENCIES=(1200000 1600000 2000000 2400000)
+TARGET_FREQUENCIES=(1200000 1400000 1600000 1800000 2000000 2200000 2400000)
 TARGET_FREQUENCIES_SMOL=(1200000 1400000)
 
 

@@ -13,34 +13,36 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Configuration Section
 ####################
 
-## ## # Server B Access
-## ## SERVER_B_USER="jcarlon"
-## ## SERVER_B_HOST="cplex3"
-## ## SERVER_B_SCRIPT_DIR="/home/jcarlon/test/dpdk-tester/generator"
-## ## # Server A Configuration
-## ## ##  L3FWD_PATH="/home/jcarlon/zzz_test/dpdk/build/examples/dpdk-l3fwd-power"
-## ## L3FWD_PATH="${SCRIPT_DIR}/../../dpdk/build/examples/dpdk-l3fwd-power"
-## ## RAPL_SCRIPT="${SCRIPT_DIR}/run_rapl.sh"
-## ## RESULTS_DIR="${SCRIPT_DIR}/res" 
-## ## MEASUREMENT_DURATION=50
-## ## MAX_BITRATE=10000000000  # 10 Gbps in bits/sec
-
-
-
-
+# this needs to be updated betwen whiskey and treebeard
 
 ##  ##  ##  
-### --- UNIPI whiskey-lace config:
-### --- Server B Access --- --- --- --- 
-SERVER_B_USER="carlon"
-SERVER_B_HOST="lace"
-SERVER_B_SCRIPT_DIR="/home/carlon/test/dpdk-tester/generator/"
-### --- Server A Configuration --- --- 
+### --- RETIS treebeard-cplex3 config:
+# Server B Access (treebeard)
+SERVER_B_USER="jcarlon"
+SERVER_B_HOST="cplex3"
+SERVER_B_SCRIPT_DIR="/home/jcarlon/test/dpdk-tester/generator"
+# Server A Configuration (cplex3)
+##  L3FWD_PATH="/home/jcarlon/zzz_test/dpdk/build/examples/dpdk-l3fwd-power"
 L3FWD_PATH="${SCRIPT_DIR}/../../dpdk/build/examples/dpdk-l3fwd-power"
 RAPL_SCRIPT="${SCRIPT_DIR}/run_rapl.sh"
 RESULTS_DIR="${SCRIPT_DIR}/res" 
-MEASUREMENT_DURATION=10
-MAX_BITRATE=400000000000  # 40 Gbps in bits/sec
+MEASUREMENT_DURATION=20
+MAX_BITRATE=10000000000  # 10 Gbps in bits/sec
+
+
+
+#   ##  ##  ##  
+#   ### --- UNIPI whiskey-lace config:
+#   ### --- Server B Access --- --- --- --- 
+#   SERVER_B_USER="carlon"
+#   SERVER_B_HOST="lace"
+#   SERVER_B_SCRIPT_DIR="/home/carlon/test/dpdk-tester/generator/"
+#   ### --- Server A Configuration --- --- 
+#   L3FWD_PATH="${SCRIPT_DIR}/../../dpdk/build/examples/dpdk-l3fwd-power"
+#   RAPL_SCRIPT="${SCRIPT_DIR}/run_rapl.sh"
+#   RESULTS_DIR="${SCRIPT_DIR}/res" 
+#   MEASUREMENT_DURATION=10
+#   MAX_BITRATE=400000000000  # 40 Gbps in bits/sec
 
 
 
