@@ -246,6 +246,8 @@ for target_freq in "${TARGET_FREQUENCIES[@]}"; do
 
             # Construct and execute the command, adding -n $suffix
             cmd="$AUTO_SCRIPT $traffic -t $type $extra_flags -n $suffix"
+            # ./exp_auto_grid.sh -p uniform -s 256 -b 32 -r 1000000 -n uniform -t pure -n pippo
+
             ## ## eval "$cmd"   
             eval "$cmd" || {
                 ret=$?
