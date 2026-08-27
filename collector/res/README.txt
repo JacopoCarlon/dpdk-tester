@@ -1,2 +1,2 @@
 ciao, 
-creo sto folder giusto così c'è sempre già pronto.
+creo sto folder giusto cosi' e' sempre gia' pronto.

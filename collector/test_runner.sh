@@ -4,7 +4,7 @@ set -euo pipefail
 
 AUTO_SCRIPT="./exp_auto_grid.sh"
 FREQ_SCRIPT="../j_usersp_optCstate_noTurbo.sh"
-SLEEP_BETWEEN=15               # seconds between individual runs
+SLEEP_BETWEEN=8               # seconds between individual runs
 WRAPPER_LOG="wrapper_$(date +%Y%m%d_%H%M%S).log"
 
 
@@ -167,9 +167,11 @@ exec > >(tee -a "$WRAPPER_LOG") 2>&1
 echo "========== Parameter sweep started at $(date) =========="
 
 
-#TARGET_FREQUENCIES=(1200000 1600000 2000000 2400000)
-TARGET_FREQUENCIES=(1200000 1400000 1600000 1800000 2000000 2200000 2400000)
 TARGET_FREQUENCIES_SMOL=(1200000 1400000)
+# TARGET_FREQUENCIES=(1200000 1600000 2000000 2400000)
+# TARGET_FREQUENCIES=(1200000 1400000 1600000 1800000 2000000 2200000 2400000)
+
+TARGET_FREQUENCIES=(1200000 1500000 1800000 2100000 2400000)
 
 
 
@@ -187,14 +189,19 @@ TARGET_FREQUENCIES_SMOL=(1200000 1400000)
 # sudo $FREQ_SCRIPT --cstates POLL,C1 $target_freq $target_freq
 # sudo $FREQ_SCRIPT --cstates POLL,C1,C1E $target_freq $target_freq
 # sudo $FREQ_SCRIPT --cstates POLL,C1,C1E,C3 $target_freq $target_freq
-# sudo $FREQ_SCRIPT --cstates POLL,C1,C1E,C3,C6 $target_freq $target_freq # is the same as: sudo $FREQ_SCRIPT --enable-cstates $target_freq $target_freq
+# sudo $FREQ_SCRIPT --cstates POLL,C1,C1E,C3,C6 $target_freq $target_freq 
+        # is the same as: sudo $FREQ_SCRIPT --enable-cstates $target_freq $target_freq
 
 
 for target_freq in "${TARGET_FREQUENCIES[@]}"; do
     ## run with all cstates enabled
-    sudo $FREQ_SCRIPT --enable-cstates $target_freq $target_freq 
+    ##  sudo $FREQ_SCRIPT --enable-cstates $target_freq $target_freq 
 
-    #   cstateSuffix="PollC1C1eC3"
+    # execute test with these cstates enabled.
+    #   !!! remember to rename the suffix accordingly !!! TODO !
+    sudo $FREQ_SCRIPT --cstates POLL,C1,C1E,C3,C6 $target_freq $target_freq
+
+    cstateSuffix="PollC1C1eC3C6"
 
     echo "=== === === === === === ==="
     echo "=== === === === === === ==="
@@ -223,10 +230,9 @@ for target_freq in "${TARGET_FREQUENCIES[@]}"; do
         for exp in "${EXPERIMENTS[@]}"; do
             read -r type extra_flags <<< "$exp"
 
-            # suffix includes both traffic name and frequency
-            #   suffix="${traffic_name}_freq${target_freq}_cstate${cstateSuffix}"
-
-            suffix="${traffic_name}_freq${target_freq}"
+            # suffix shall include both traffic name and frequency
+            suffix="${traffic_name}_freq${target_freq}_cstate${cstateSuffix}"
+            #   suffix="${traffic_name}_freq${target_freq}"
 
             echo "----------------------------------------------------------------"
             echo "Traffic : $traffic (name: $traffic_name)"

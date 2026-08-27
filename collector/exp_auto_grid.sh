@@ -26,7 +26,7 @@ SERVER_B_SCRIPT_DIR="/home/jcarlon/test/dpdk-tester/generator"
 L3FWD_PATH="${SCRIPT_DIR}/../../dpdk/build/examples/dpdk-l3fwd-power"
 RAPL_SCRIPT="${SCRIPT_DIR}/run_rapl.sh"
 RESULTS_DIR="${SCRIPT_DIR}/res" 
-MEASUREMENT_DURATION=12
+MEASUREMENT_DURATION=5
 MAX_BITRATE=10000000000  # 10 Gbps in bits/sec
 
 
@@ -120,7 +120,7 @@ SIZES=( 128 256 512 1024 )
 
 # Advanced Settings
 SSH_OPTS="-o StrictHostKeyChecking=no -o ConnectTimeout=5 -o LogLevel=ERROR"
-L3FWD_CORES="0"
+
 LATENCY_TEST_CORES="2,4,6"
 INITIAL_WAIT=5
 COOLDOWN=2
