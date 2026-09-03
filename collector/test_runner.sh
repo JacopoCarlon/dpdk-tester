@@ -199,9 +199,9 @@ for target_freq in "${TARGET_FREQUENCIES[@]}"; do
 
     # execute test with these cstates enabled.
     #   !!! remember to rename the suffix accordingly !!! TODO !
-    sudo $FREQ_SCRIPT --cstates POLL,C1,C1E,C3 $target_freq $target_freq
+    sudo $FREQ_SCRIPT --cstates POLL,C1,C1E $target_freq $target_freq
 
-    cstateSuffix="PollC1C1eC3"
+    cstateSuffix="PollC1C1e"
 
     echo "=== === === === === === ==="
     echo "=== === === === === === ==="
