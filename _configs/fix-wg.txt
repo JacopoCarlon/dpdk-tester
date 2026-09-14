@@ -1,0 +1,170 @@
+jacopo@JC-fisso:~$ sudo wg-quick down lorenz-carlon
+[sudo: authenticate] Password:          
+wg-quick: `lorenz-carlon' is not a WireGuard interface
+jacopo@JC-fisso:~$ sudo wg-quick up lorenz-carlon
+[#] ip link add dev lorenz-carlon type wireguard
+[#] wg setconf lorenz-carlon /dev/fd/63
+[#] ip -4 address add 10.30.30.85/24 dev lorenz-carlon
+[#] ip link set mtu 1420 up dev lorenz-carlon
+[#] ip -4 route add 192.168.64.0/24 dev lorenz-carlon
+RTNETLINK answers: File exists
+[#] ip link delete dev lorenz-carlon
+jacopo@JC-fisso:~$ ip route show | grep 192.168.64
+192.168.64.0/24 via 192.168.91.37 dev tun0 
+jacopo@JC-fisso:~$ ip route get 192.168.64.1
+192.168.64.1 via 192.168.91.37 dev tun0 src 192.168.91.38 uid 1000 
+    cache 
+jacopo@JC-fisso:~$ ip -br addr
+lo               UNKNOWN        127.0.0.1/8 ::1/128 
+enp4s0           UP             192.168.178.22/24 fd92:2344:93cf:0:59fd:4913:8d4d:3ce5/64 fd92:2344:93cf:0:ccd1:ba79:742d:6377/64 fe80::a4cb:4a9d:cabc:6e1e/64 
+wlo1             DOWN           
+lxcbr0           DOWN           10.0.3.1/24 fc42:5009:ba4b:5ab0::1/64 
+tun0             UNKNOWN        192.168.91.38 peer 192.168.91.37/32 fe80::fdff:851:404f:1430/64 
+jacopo@JC-fisso:~$ sudo wg show
+jacopo@JC-fisso:~$ nmcli connection show --active
+NAME                UUID                                  TYPE      DEVICE 
+Wired connection 1  68e11d75-83c1-399c-a465-a7e0898db881  ethernet  enp4s0 
+lo                  995e2296-3471-4159-a245-7acf9cc49000  loopback  lo     
+lxcbr0              1881eb03-dcb8-41ca-bf3e-99b9526101e1  bridge    lxcbr0 
+tun0                95522d57-ecbd-4e72-a106-72491488bbbe  tun       tun0   
+jacopo@JC-fisso:~$ systemctl list-units --type=service --state=running | grep -iE 'wg|wireguard|network'
+  NetworkManager.service        loaded active running Network Manager
+  systemd-resolved.service      loaded active running Network Name Resolution
+  systemd-timesyncd.service     loaded active running Network Time Synchronization
+jacopo@JC-fisso:~$ systemctl is-enabled wg-quick@wg0 wg-quick@wg1 wg-quick@wstunnel-lorenz-carlon
+disabled
+disabled
+disabled
+jacopo@JC-fisso:~$ systemctl status wg-quick@wg0 --no-pager
+○ wg-quick@wg0.service - WireGuard via wg-quick(8) for wg0
+     Loaded: loaded (/usr/lib/systemd/system/wg-quick@.service; disabled; preset: enabled)
+     Active: inactive (dead)
+       Docs: man:wg-quick(8)
+             man:wg(8)
+             https://www.wireguard.com/
+             https://www.wireguard.com/quickstart/
+             https://git.zx2c4.com/wireguard-tools/about/src/man/wg-quick.8
+             https://git.zx2c4.com/wireguard-tools/about/src/man/wg.8
+jacopo@JC-fisso:~$ sudo bash -c 'grep -H AllowedIPs /etc/wireguard/*.conf'
+/etc/wireguard/lorenz-carlon.conf:AllowedIPs = 10.0.64.0/24, 192.168.64.0/24
+/etc/wireguard/wg0.conf:AllowedIPs = 10.0.64.0/24, 192.168.64.0/24
+/etc/wireguard/wg1.conf:AllowedIPs = 10.0.64.0/24, 192.168.64.0/24
+/etc/wireguard/wstunnel-lorenz-carlon.conf:AllowedIPs = 10.0.64.0/24, 192.168.64.0/24
+jacopo@JC-fisso:~$ nmcli connection show
+NAME                UUID                                  TYPE      DEVICE 
+Wired connection 1  68e11d75-83c1-399c-a465-a7e0898db881  ethernet  enp4s0 
+lo                  995e2296-3471-4159-a245-7acf9cc49000  loopback  lo     
+lxcbr0              1881eb03-dcb8-41ca-bf3e-99b9526101e1  bridge    lxcbr0 
+tun0                95522d57-ecbd-4e72-a106-72491488bbbe  tun       tun0   
+retis               1db31b26-f679-41bb-8486-26f099fc4af5  vpn       --     
+jacopo@JC-fisso:~$ sudo sed -i 's|AllowedIPs = 10.0.64.0/24, 192.168.64.0/24|AllowedIPs = 10.0.64.0/24|' \
+  /etc/wireguard/lorenz-carlon.conf \
+  /etc/wireguard/wg0.conf \
+  /etc/wireguard/wg1.conf \
+  /etc/wireguard/wstunnel-lorenz-carlon.conf
+jacopo@JC-fisso:~$ sudo wg-quick up lorenz-carlon
+[#] ip link add dev lorenz-carlon type wireguard
+[#] wg setconf lorenz-carlon /dev/fd/63
+[#] ip -4 address add 10.30.30.85/24 dev lorenz-carlon
+[#] ip link set mtu 1420 up dev lorenz-carlon
+[#] ip -4 route add 10.0.64.0/24 dev lorenz-carlon
+jacopo@JC-fisso:~$ sudo wg show
+interface: lorenz-carlon
+  public key: eVYAHtFAB7aYTRvUhle26NGYnxm9/NJarI8lnByvfDw=
+  private key: (hidden)
+  listening port: 38789
+
+peer: mXBT6GcugGbr9chP7EExjX+DCSNthODf4zCl5sQsUn4=
+  endpoint: 131.114.52.255:443
+  allowed ips: 10.0.64.0/24
+jacopo@JC-fisso:~$ ping -c2 10.0.64.30
+PING 10.0.64.30 (10.0.64.30) 56(84) bytes of data.
+64 bytes from 10.0.64.30: icmp_seq=1 ttl=63 time=9.26 ms
+64 bytes from 10.0.64.30: icmp_seq=2 ttl=63 time=6.32 ms
+
+--- 10.0.64.30 ping statistics ---
+2 packets transmitted, 2 received, 0% packet loss, time 1001ms
+rtt min/avg/max/mdev = 6.317/7.788/9.259/1.471 ms
+jacopo@JC-fisso:~$ ping -c2 10.0.64.40
+PING 10.0.64.40 (10.0.64.40) 56(84) bytes of data.
+64 bytes from 10.0.64.40: icmp_seq=1 ttl=63 time=6.14 ms
+64 bytes from 10.0.64.40: icmp_seq=2 ttl=63 time=6.23 ms
+
+--- 10.0.64.40 ping statistics ---
+2 packets transmitted, 2 received, 0% packet loss, time 1001ms
+rtt min/avg/max/mdev = 6.141/6.184/6.228/0.043 ms
+jacopo@JC-fisso:~$ ssh whiskey
+Welcome to Ubuntu 24.04.4 LTS (GNU/Linux 6.17.0-35-generic x86_64)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/pro
+
+Expanded Security Maintenance for Applications is not enabled.
+
+60 updates can be applied immediately.
+To see these additional updates run: apt list --upgradable
+
+20 additional security updates can be applied with ESM Apps.
+Learn more about enabling ESM Apps service at https://ubuntu.com/esm
+
+Last login: Mon Sep 14 14:50:01 2026 from 10.30.30.85
+$ 
+
+
+
+
+
+
+
+
+
+jacopo@JC-fisso:~$ cat .ssh/config 
+Host treebeard
+    Hostname 10.30.3.38
+    User jcarlon
+    IdentityFile ~/.ssh/id_ed25519_retis
+
+Host cplex3
+    Hostname 10.30.3.100
+    User jcarlon
+    IdentityFile ~/.ssh/id_ed25519_retis
+
+Host ravenclaw
+    Hostname 10.30.3.34
+    User jcarlon
+    IdentityFile ~/.ssh/id_ed25519_retis
+
+Host whiskey
+    HostName 10.0.64.30
+    User carlon
+    IdentityFile ~/.ssh/id_ed25519_Muletto
+
+Host lace
+    HostName 10.0.64.40
+    User carlon
+    IdentityFile ~/.ssh/id_ed25519_Muletto
+
+
+
+jacopo@JC-fisso:~$ sudo cat /etc/wireguard/lorenz-carlon.conf
+[sudo: authenticate] Password:         
+sudo: Authentication failed, try again.
+[sudo: authenticate] Password:          
+
+[Interface]
+PrivateKey = GBmMXHXcxGcvfBbUUnukOos9bre0TT3nO4YruopXhkc=
+Address = 10.30.30.85/24
+
+
+[Peer]
+PublicKey = mXBT6GcugGbr9chP7EExjX+DCSNthODf4zCl5sQsUn4=
+EndPoint = 131.114.52.255:443
+AllowedIPs = 10.0.64.0/24
+
+
+jacopo@JC-fisso:~$ 
+
+
+
+
