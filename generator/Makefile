@@ -5,10 +5,10 @@
 # this needs to be updated betwen whiskey and treebeard >
 
 ## Clpex
-RTE_SDK := $(abspath /home/jcarlon/test/dpdk )
+#	RTE_SDK := $(abspath /home/jcarlon/test/dpdk )
 
 ## Lace
-#	RTE_SDK := $(abspath /home/carlon/test/dpdk )
+RTE_SDK := $(abspath /home/carlon/test/dpdk )
 
 RTE_TARGET ?= build
 RTE_ARCH ?= x86_64-native-linuxapp-gcc
