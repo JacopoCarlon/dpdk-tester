@@ -1,0 +1,36 @@
+C-state counters (before RAPL) Timestamp: 1786091491
+cpu0 state0: name=POLL usage=1660 time=92460
+cpu0 state1: name=C1_ACPI usage=85972 time=28089953
+cpu0 state2: name=C2_ACPI usage=45086 time=37398756
+cpu0 state3: name=C3_ACPI usage=118241 time=555417905
+cpu2 state0: name=POLL usage=2072 time=120614
+cpu2 state1: name=C1_ACPI usage=65231 time=19795507
+cpu2 state2: name=C2_ACPI usage=27721 time=23628121
+cpu2 state3: name=C3_ACPI usage=70126 time=573245052
+cpu4 state0: name=POLL usage=2082 time=120503
+cpu4 state1: name=C1_ACPI usage=69947 time=22323421
+cpu4 state2: name=C2_ACPI usage=29726 time=25830813
+cpu4 state3: name=C3_ACPI usage=64997 time=571739734
+cpu6 state0: name=POLL usage=1992 time=116209
+cpu6 state1: name=C1_ACPI usage=78531 time=22439638
+cpu6 state2: name=C2_ACPI usage=30867 time=26208923
+cpu6 state3: name=C3_ACPI usage=72996 time=573148262
+
+C-state counters (after RAPL) Timestamp: 1786091498
+cpu0 state0: name=POLL usage=1660 time=92460
+cpu0 state1: name=C1_ACPI usage=86393 time=28329933
+cpu0 state2: name=C2_ACPI usage=45386 time=37688853
+cpu0 state3: name=C3_ACPI usage=119055 time=562510345
+cpu2 state0: name=POLL usage=2073 time=120682
+cpu2 state1: name=C1_ACPI usage=65552 time=19968654
+cpu2 state2: name=C2_ACPI usage=27956 time=23855134
+cpu2 state3: name=C3_ACPI usage=70562 time=579791996
+cpu4 state0: name=POLL usage=2082 time=120503
+cpu4 state1: name=C1_ACPI usage=70270 time=22475244
+cpu4 state2: name=C2_ACPI usage=29914 time=26009276
+cpu4 state3: name=C3_ACPI usage=65341 time=578982747
+cpu6 state0: name=POLL usage=1992 time=116209
+cpu6 state1: name=C1_ACPI usage=78753 time=22567754
+cpu6 state2: name=C2_ACPI usage=31072 time=26395902
+cpu6 state3: name=C3_ACPI usage=73232 time=580039323
+
